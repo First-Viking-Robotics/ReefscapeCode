@@ -34,9 +34,24 @@ class Drivetrain:
             driveEncoderChannel=globalConstants.frontLeftDriveEncoderChannel,
             turningEncoderChannel=globalConstants.frontLeftTurningEncoderChannel
         )
-        self.frontRight = swervemodule.SwerveModule(3, 4, 4, 5)
-        self.backLeft = swervemodule.SwerveModule(5, 6, 8, 9)
-        self.backRight = swervemodule.SwerveModule(7, 8, 12, 13)
+        self.frontRight = swervemodule.SwerveModule(
+            driveMotorChannel=globalConstants.frontRightDriveMotorChannel,
+            turningMotorChannel=globalConstants.frontRightTurningMotorChannel,
+            driveEncoderChannel=globalConstants.frontRightDriveEncoderChannel,
+            turningEncoderChannel=globalConstants.frontRightTurningEncoderChannel
+        )
+        self.backLeft = swervemodule.SwerveModule(
+            driveMotorChannel=globalConstants.backLeftDriveMotorChannel,
+            turningMotorChannel=globalConstants.backLeftTurningMotorChannel,
+            driveEncoderChannel=globalConstants.backLeftDriveEncoderChannel,
+            turningEncoderChannel=globalConstants.backLeftTurningEncoderChannel
+        )
+        self.backRight = swervemodule.SwerveModule(
+            driveMotorChannel=globalConstants.backRightDriveMotorChannel,
+            turningMotorChannel=globalConstants.backRightTurningMotorChannel,
+            driveEncoderChannel=globalConstants.backRightDriveEncoderChannel,
+            turningEncoderChannel=globalConstants.backRightTurningEncoderChannel
+        )
 
         self.gyro = wpilib.AnalogGyro(0)
 
