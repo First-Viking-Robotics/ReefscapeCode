@@ -8,15 +8,12 @@ import math
 
 import phoenix5
 import phoenix6.hardware
-import wpilib
 import wpimath.kinematics
 import wpimath.geometry
 import wpimath.controller
 import wpimath.trajectory
 
 from src.constants import Constants
-
-globalConstants = Constants()
 
 
 class SwerveModule:
@@ -26,6 +23,7 @@ class SwerveModule:
         turningMotorChannel: int,
         driveEncoderChannel: int,
         turningEncoderChannel: int,
+            constants: Constants
     ) -> None:
         """Constructs a SwerveModule with a drive motor, turning motor, drive encoder and turning encoder.
 
@@ -34,6 +32,7 @@ class SwerveModule:
         :param driveEncoderChannel:    CAN bus channel for the drive encoder channel
         :param turningEncoderChannel:  CAN bus channel for the turning encoder channel
         """
+        self.constants = constants
         self.driveMotor = phoenix5.TalonFX(driveMotorChannel)
         self.turningMotor = phoenix5.TalonFX(turningMotorChannel)
 
@@ -49,8 +48,8 @@ class SwerveModule:
             0,
             0,
             wpimath.trajectory.TrapezoidProfile.Constraints(
-                globalConstants.kModuleMaxAngularVelocity,
-                globalConstants.kModuleMaxAngularAcceleration,
+                self.constants.kModuleMaxAngularVelocity,
+                self.constants.kModuleMaxAngularAcceleration,
             ),
         )
 
@@ -62,13 +61,13 @@ class SwerveModule:
         # distance traveled for one rotation of the wheel divided by the encoder
         # resolution.
         self.driveEncoder.setDistancePerPulse(
-            math.tau * globalConstants.kWheelRadius / globalConstants.kEncoderResolution
+            math.tau * self.constants.kWheelRadius / self.constants.kEncoderResolution
         )
 
         # Set the distance (in this case, angle) in radians per pulse for the turning encoder.
         # This is the the angle through an entire rotation (2 * pi) divided by the
         # encoder resolution.
-        self.turningEncoder.setDistancePerPulse(math.tau / globalConstants.kEncoderResolution)
+        self.turningEncoder.setDistancePerPulse(math.tau / self.constants.kEncoderResolution)
 
         # Limit the PID Controller's input range between -pi and pi and set the input
         # to be continuous.

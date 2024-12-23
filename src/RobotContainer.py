@@ -1,15 +1,15 @@
 import wpilib
-import wpimath
+import wpimath.filter
 from pathplannerlib.auto import AutoBuilder
-import pathplannerlib.telemetry
 
 from src.subsystems import drivetrain
 
 
 class RobotContainer:
-    def __init__(self):
+    def __init__(self, constants):
+        self.constants = constants
         self.controller = wpilib.XboxController(0)
-        self.swerve = drivetrain.Drivetrain()
+        self.swerve = drivetrain.Drivetrain(self.constants)
 
         # Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
         self.xspeedLimiter = wpimath.filter.SlewRateLimiter(3)
@@ -39,7 +39,7 @@ class RobotContainer:
                 -self.xspeedLimiter.calculate(
                 wpimath.applyDeadband(self.controller.getLeftY(), 0.02)
             )
-                * drivetrain.kMaxSpeed
+                * self.constants.kMaxSpeed
         )
 
         # Get the y speed or sideways/strafe speed. We are inverting this because
@@ -49,7 +49,7 @@ class RobotContainer:
                 -self.yspeedLimiter.calculate(
                 wpimath.applyDeadband(self.controller.getLeftX(), 0.02)
             )
-                * drivetrain.kMaxSpeed
+                * self.constants.kMaxSpeed
         )
 
         # Get the rate of angular rotation. We are inverting this because we want a
@@ -60,7 +60,7 @@ class RobotContainer:
                 -self.rotLimiter.calculate(
                 wpimath.applyDeadband(self.controller.getRightX(), 0.02)
             )
-                * drivetrain.kMaxSpeed
+                * self.constants.kMaxSpeed
         )
 
         self.swerve.drive(xSpeed, ySpeed, rot, fieldRelative, getPeriod())

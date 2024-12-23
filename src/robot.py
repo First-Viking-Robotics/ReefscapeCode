@@ -8,12 +8,14 @@
 import wpilib.drive
 
 from src.RobotContainer import RobotContainer
+from src.constants import Constants
 
 
 class MyRobot(wpilib.TimedRobot):
     def robotInit(self) -> None:
         """Robot initialization function"""
-        self.container = RobotContainer()
+        self.constants = Constants()
+        self.container = RobotContainer(self.constants)
 
     def autonomousPeriodic(self) -> None:
         self.container.driveWithJoystick(self.getPeriod, False)

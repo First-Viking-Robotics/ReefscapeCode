@@ -10,6 +10,8 @@ class Constants:
         self.translationalPIDConstants = pathplannerlib.config.PIDConstants(5.0, 0.0, 0.0)
         self.rotationalPIDConstants = pathplannerlib.config.PIDConstants(5.0, 0.0, 0.0)
 
+        # PID For
+
         # Physical Constants
         self.kMaxSpeed = 3.0  # 3 meters per second
         self.kMaxAngularSpeed = math.pi  # 1/2 rotation per second

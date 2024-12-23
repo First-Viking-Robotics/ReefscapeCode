@@ -14,43 +14,42 @@ from pathplannerlib.config import RobotConfig
 import swervemodule
 from src.constants import Constants
 
-globalConstants = Constants()
-
 
 class Drivetrain:
     """
     Represents a swerve drive style drivetrain.
     """
 
-    def __init__(self) -> None:
-        self.frontLeftLocation = globalConstants.frontLeftLocation
-        self.frontRightLocation = globalConstants.frontRightLocation
-        self.backLeftLocation = globalConstants.backLeftLocation
-        self.backRightLocation = globalConstants.backRightLocation
+    def __init__(self, constants) -> None:
+        self.constants = constants
+        self.frontLeftLocation = self.constants.frontLeftLocation
+        self.frontRightLocation = self.constants.frontRightLocation
+        self.backLeftLocation = self.constants.backLeftLocation
+        self.backRightLocation = self.constants.backRightLocation
 
         self.frontLeft = swervemodule.SwerveModule(
-            driveMotorChannel=globalConstants.frontLeftDriveMotorChannel,
-            turningMotorChannel=globalConstants.frontLeftTurningMotorChannel,
-            driveEncoderChannel=globalConstants.frontLeftDriveEncoderChannel,
-            turningEncoderChannel=globalConstants.frontLeftTurningEncoderChannel
+            driveMotorChannel=self.constants.frontLeftDriveMotorChannel,
+            turningMotorChannel=self.constants.frontLeftTurningMotorChannel,
+            driveEncoderChannel=self.constants.frontLeftDriveEncoderChannel,
+            turningEncoderChannel=self.constants.frontLeftTurningEncoderChannel
         )
         self.frontRight = swervemodule.SwerveModule(
-            driveMotorChannel=globalConstants.frontRightDriveMotorChannel,
-            turningMotorChannel=globalConstants.frontRightTurningMotorChannel,
-            driveEncoderChannel=globalConstants.frontRightDriveEncoderChannel,
-            turningEncoderChannel=globalConstants.frontRightTurningEncoderChannel
+            driveMotorChannel=self.constants.frontRightDriveMotorChannel,
+            turningMotorChannel=self.constants.frontRightTurningMotorChannel,
+            driveEncoderChannel=self.constants.frontRightDriveEncoderChannel,
+            turningEncoderChannel=self.constants.frontRightTurningEncoderChannel
         )
         self.backLeft = swervemodule.SwerveModule(
-            driveMotorChannel=globalConstants.backLeftDriveMotorChannel,
-            turningMotorChannel=globalConstants.backLeftTurningMotorChannel,
-            driveEncoderChannel=globalConstants.backLeftDriveEncoderChannel,
-            turningEncoderChannel=globalConstants.backLeftTurningEncoderChannel
+            driveMotorChannel=self.constants.backLeftDriveMotorChannel,
+            turningMotorChannel=self.constants.backLeftTurningMotorChannel,
+            driveEncoderChannel=self.constants.backLeftDriveEncoderChannel,
+            turningEncoderChannel=self.constants.backLeftTurningEncoderChannel
         )
         self.backRight = swervemodule.SwerveModule(
-            driveMotorChannel=globalConstants.backRightDriveMotorChannel,
-            turningMotorChannel=globalConstants.backRightTurningMotorChannel,
-            driveEncoderChannel=globalConstants.backRightDriveEncoderChannel,
-            turningEncoderChannel=globalConstants.backRightTurningEncoderChannel
+            driveMotorChannel=self.constants.backRightDriveMotorChannel,
+            turningMotorChannel=self.constants.backRightTurningMotorChannel,
+            driveEncoderChannel=self.constants.backRightDriveEncoderChannel,
+            turningEncoderChannel=self.constants.backRightTurningEncoderChannel
         )
 
         self.gyro = wpilib.AnalogGyro(0)
@@ -88,8 +87,8 @@ class Drivetrain:
             # Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also outputs individual module feedforwards
             PPHolonomicDriveController(
                 # PPHolonomicController is the built in path following controller for holonomic drive trains
-                PIDConstants(5.0, 0.0, 0.0),  # Translation PID constants
-                PIDConstants(5.0, 0.0, 0.0)  # Rotation PID constants
+                self.constants.translationalPIDConstants,  # Translation PID constants
+                self.constants.rotationalPIDConstants  # Rotation PID constants
             ),
             config,  # The robot configuration
             self.shouldFlipPath,  # Supplier to control path flipping based on alliance color
@@ -101,7 +100,7 @@ class Drivetrain:
             wpimath.kinematics.ChassisSpeeds.discretize(speeds, 0.02)
         )
         wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            swerveModuleStates, globalConstants.kMaxSpeed
+            swerveModuleStates, self.constants.kMaxSpeed
         )
         self.frontLeft.setDesiredState(swerveModuleStates[0])
         self.frontRight.setDesiredState(swerveModuleStates[1])
@@ -138,7 +137,7 @@ class Drivetrain:
             )
         )
         wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            swerveModuleStates, globalConstants.kMaxSpeed
+            swerveModuleStates, self.constants.kMaxSpeed
         )
         self.frontLeft.setDesiredState(swerveModuleStates[0])
         self.frontRight.setDesiredState(swerveModuleStates[1])
