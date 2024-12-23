@@ -74,7 +74,4 @@ class PhysicsEngine:
         speeds = self.drivetrain.calculate(lf_motor, lr_motor, rf_motor, rr_motor)
         pose = self.physics_controller.drive(speeds, tm_diff)
 
-        # Update the gyro simulation
-        # -> FRC gyros are positive clockwise, but the returned pose is positive
-        #    counter-clockwise
         self.gyro.setAngle(-pose.rotation().degrees())
