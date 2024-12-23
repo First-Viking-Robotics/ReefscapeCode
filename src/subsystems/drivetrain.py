@@ -3,10 +3,6 @@
 # Open Source Software; you can modify and/or share it under the terms of
 # the WPILib BSD license file in the root directory of this project.
 #
-
-import math
-
-import pathplannerlib.config
 import wpilib
 import wpimath.geometry
 import wpimath.kinematics
@@ -16,9 +12,9 @@ from pathplannerlib.controller import PPHolonomicDriveController
 from pathplannerlib.config import RobotConfig
 
 import swervemodule
+from src.constants import Constants
 
-kMaxSpeed = 3.0  # 3 meters per second
-kMaxAngularSpeed = math.pi  # 1/2 rotation per second
+globalConstants = Constants()
 
 
 class Drivetrain:
@@ -27,15 +23,20 @@ class Drivetrain:
     """
 
     def __init__(self) -> None:
-        self.frontLeftLocation = wpimath.geometry.Translation2d(0.381, 0.381)
-        self.frontRightLocation = wpimath.geometry.Translation2d(0.381, -0.381)
-        self.backLeftLocation = wpimath.geometry.Translation2d(-0.381, 0.381)
-        self.backRightLocation = wpimath.geometry.Translation2d(-0.381, -0.381)
+        self.frontLeftLocation = globalConstants.frontLeftLocation
+        self.frontRightLocation = globalConstants.frontRightLocation
+        self.backLeftLocation = globalConstants.backLeftLocation
+        self.backRightLocation = globalConstants.backRightLocation
 
-        self.frontLeft = swervemodule.SwerveModule(1, 2, 0, 1, 2, 3)
-        self.frontRight = swervemodule.SwerveModule(3, 4, 4, 5, 6, 7)
-        self.backLeft = swervemodule.SwerveModule(5, 6, 8, 9, 10, 11)
-        self.backRight = swervemodule.SwerveModule(7, 8, 12, 13, 14, 15)
+        self.frontLeft = swervemodule.SwerveModule(
+            driveMotorChannel=globalConstants.frontLeftDriveMotorChannel,
+            turningMotorChannel=globalConstants.frontLeftTurningMotorChannel,
+            driveEncoderChannel=globalConstants.frontLeftDriveEncoderChannel,
+            turningEncoderChannel=globalConstants.frontLeftTurningEncoderChannel
+        )
+        self.frontRight = swervemodule.SwerveModule(3, 4, 4, 5)
+        self.backLeft = swervemodule.SwerveModule(5, 6, 8, 9)
+        self.backRight = swervemodule.SwerveModule(7, 8, 12, 13)
 
         self.gyro = wpilib.AnalogGyro(0)
 
@@ -80,6 +81,19 @@ class Drivetrain:
             self  # Reference to this subsystem to set requirements
         )
 
+    def driveRobotRelative(self, speeds):
+        swerveModuleStates = self.kinematics.toSwerveModuleStates(
+            wpimath.kinematics.ChassisSpeeds.discretize(speeds, 0.02)
+        )
+        wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(
+            swerveModuleStates, globalConstants.kMaxSpeed
+        )
+        self.frontLeft.setDesiredState(swerveModuleStates[0])
+        self.frontRight.setDesiredState(swerveModuleStates[1])
+        self.backLeft.setDesiredState(swerveModuleStates[2])
+        self.backRight.setDesiredState(swerveModuleStates[3])
+
+
     def drive(
         self,
         xSpeed: float,
@@ -109,7 +123,7 @@ class Drivetrain:
             )
         )
         wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            swerveModuleStates, kMaxSpeed
+            swerveModuleStates, globalConstants.kMaxSpeed
         )
         self.frontLeft.setDesiredState(swerveModuleStates[0])
         self.frontRight.setDesiredState(swerveModuleStates[1])

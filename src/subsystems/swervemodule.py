@@ -7,16 +7,16 @@
 import math
 
 import phoenix5
+import phoenix6.hardware
 import wpilib
 import wpimath.kinematics
 import wpimath.geometry
 import wpimath.controller
 import wpimath.trajectory
 
-kWheelRadius = 0.0508
-kEncoderResolution = 4096
-kModuleMaxAngularVelocity = math.pi
-kModuleMaxAngularAcceleration = math.tau
+from src.constants import Constants
+
+globalConstants = Constants()
 
 
 class SwerveModule:
@@ -24,27 +24,21 @@ class SwerveModule:
         self,
         driveMotorChannel: int,
         turningMotorChannel: int,
-        driveEncoderChannelA: int,
-        driveEncoderChannelB: int,
-        turningEncoderChannelA: int,
-        turningEncoderChannelB: int,
+        driveEncoderChannel: int,
+        turningEncoderChannel: int,
     ) -> None:
         """Constructs a SwerveModule with a drive motor, turning motor, drive encoder and turning encoder.
 
-        :param driveMotorChannel:      PWM output for the drive motor.
-        :param turningMotorChannel:    PWM output for the turning motor.
-        :param driveEncoderChannelA:   DIO input for the drive encoder channel A
-        :param driveEncoderChannelB:   DIO input for the drive encoder channel B
-        :param turningEncoderChannelA: DIO input for the turning encoder channel A
-        :param turningEncoderChannelB: DIO input for the turning encoder channel B
+        :param driveMotorChannel:      CAN bus channel for the drive motor.
+        :param turningMotorChannel:    CAN bus channel for the turning motor.
+        :param driveEncoderChannel:    CAN bus channel for the drive encoder channel
+        :param turningEncoderChannel:  CAN bus channel for the turning encoder channel
         """
         self.driveMotor = phoenix5.TalonFX(driveMotorChannel)
         self.turningMotor = phoenix5.TalonFX(turningMotorChannel)
 
-        self.driveEncoder = wpilib.Encoder(driveEncoderChannelA, driveEncoderChannelB)
-        self.turningEncoder = wpilib.Encoder(
-            turningEncoderChannelA, turningEncoderChannelB
-        )
+        self.driveEncoder = phoenix6.hardware.CANcoder(driveEncoderChannel)
+        self.turningEncoder = phoenix6.hardware.CANcoder(turningEncoderChannel)
 
         # Gains are for example purposes only - must be determined for your own robot!
         self.drivePIDController = wpimath.controller.PIDController(1, 0, 0)
@@ -55,8 +49,8 @@ class SwerveModule:
             0,
             0,
             wpimath.trajectory.TrapezoidProfile.Constraints(
-                kModuleMaxAngularVelocity,
-                kModuleMaxAngularAcceleration,
+                globalConstants.kModuleMaxAngularVelocity,
+                globalConstants.kModuleMaxAngularAcceleration,
             ),
         )
 
@@ -68,13 +62,13 @@ class SwerveModule:
         # distance traveled for one rotation of the wheel divided by the encoder
         # resolution.
         self.driveEncoder.setDistancePerPulse(
-            math.tau * kWheelRadius / kEncoderResolution
+            math.tau * globalConstants.kWheelRadius / globalConstants.kEncoderResolution
         )
 
         # Set the distance (in this case, angle) in radians per pulse for the turning encoder.
         # This is the the angle through an entire rotation (2 * pi) divided by the
         # encoder resolution.
-        self.turningEncoder.setDistancePerPulse(math.tau / kEncoderResolution)
+        self.turningEncoder.setDistancePerPulse(math.tau / globalConstants.kEncoderResolution)
 
         # Limit the PID Controller's input range between -pi and pi and set the input
         # to be continuous.
