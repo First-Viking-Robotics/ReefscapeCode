@@ -23,3 +23,6 @@ class MyRobot(wpilib.TimedRobot):
 
     def teleopPeriodic(self) -> None:
         self.container.driveWithJoystick(self.getPeriod, True)
+
+    def disabledInit(self) -> None:
+        self.container.disable()

@@ -108,6 +108,12 @@ class Drivetrain:
             self  # Reference to this subsystem to set requirements
         )
 
+    def disable(self):
+        self.frontLeft.disable()
+        self.frontRight.disable()
+        self.backLeft.disable()
+        self.backRight.disable()
+
     def driveRobotRelative(self, speeds):
         swerveModuleStates = self.kinematics.toSwerveModuleStates(
             wpimath.kinematics.ChassisSpeeds.discretize(speeds, 0.02)

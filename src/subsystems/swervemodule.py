@@ -57,29 +57,22 @@ class SwerveModule:
         self.driveFeedforward = wpimath.controller.SimpleMotorFeedforwardMeters(1, 3)
         self.turnFeedforward = wpimath.controller.SimpleMotorFeedforwardMeters(1, 0.5)
 
-        # Set the distance per pulse for the drive encoder. We can simply use the
-        # distance traveled for one rotation of the wheel divided by the encoder
-        # resolution.
-        self.driveEncoder.setDistancePerPulse(
-            math.tau * self.constants.kWheelRadius / self.constants.kEncoderResolution
-        )
-
-        # Set the distance (in this case, angle) in radians per pulse for the turning encoder.
-        # This is the the angle through an entire rotation (2 * pi) divided by the
-        # encoder resolution.
-        self.turningEncoder.setDistancePerPulse(math.tau / self.constants.kEncoderResolution)
-
         # Limit the PID Controller's input range between -pi and pi and set the input
         # to be continuous.
         self.turningPIDController.enableContinuousInput(-math.pi, math.pi)
+
+    def disable(self):
+        self.driveMotor.set(phoenix5.ControlMode.Disabled)
+        self.turningMotor.set(phoenix5.ControlMode.Disabled)
 
     def getState(self) -> wpimath.kinematics.SwerveModuleState:
         """Returns the current state of the module.
 
         :returns: The current state of the module.
         """
+        # TODO: Make it get correct velocity and position
         return wpimath.kinematics.SwerveModuleState(
-            self.driveEncoder.getRate(),
+            self.driveEncoder.get_velocity(),
             wpimath.geometry.Rotation2d(self.turningEncoder.getDistance()),
         )
 
