@@ -7,13 +7,11 @@ import wpilib
 import wpimath.geometry
 import wpimath.kinematics
 from pathplannerlib.auto import AutoBuilder
-from pathplannerlib.config import PIDConstants
 from pathplannerlib.controller import PPHolonomicDriveController
-from pathplannerlib.config import RobotConfig
+import pathplannerlib.config
 
 import swervemodule
 from src.constants import Constants
-
 
 class Drivetrain:
     """
@@ -31,25 +29,29 @@ class Drivetrain:
             driveMotorChannel=self.constants.frontLeftDriveMotorChannel,
             turningMotorChannel=self.constants.frontLeftTurningMotorChannel,
             driveEncoderChannel=self.constants.frontLeftDriveEncoderChannel,
-            turningEncoderChannel=self.constants.frontLeftTurningEncoderChannel
+            turningEncoderChannel=self.constants.frontLeftTurningEncoderChannel,
+            constants=self.constants
         )
         self.frontRight = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.frontRightDriveMotorChannel,
             turningMotorChannel=self.constants.frontRightTurningMotorChannel,
             driveEncoderChannel=self.constants.frontRightDriveEncoderChannel,
-            turningEncoderChannel=self.constants.frontRightTurningEncoderChannel
+            turningEncoderChannel=self.constants.frontRightTurningEncoderChannel,
+            constants=self.constants
         )
         self.backLeft = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.backLeftDriveMotorChannel,
             turningMotorChannel=self.constants.backLeftTurningMotorChannel,
             driveEncoderChannel=self.constants.backLeftDriveEncoderChannel,
-            turningEncoderChannel=self.constants.backLeftTurningEncoderChannel
+            turningEncoderChannel=self.constants.backLeftTurningEncoderChannel,
+            constants=self.constants
         )
         self.backRight = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.backRightDriveMotorChannel,
             turningMotorChannel=self.constants.backRightTurningMotorChannel,
             driveEncoderChannel=self.constants.backRightDriveEncoderChannel,
-            turningEncoderChannel=self.constants.backRightTurningEncoderChannel
+            turningEncoderChannel=self.constants.backRightTurningEncoderChannel,
+            constants=self.constants
         )
 
         self.gyro = wpilib.AnalogGyro(0)
@@ -76,7 +78,18 @@ class Drivetrain:
 
         # Load the RobotConfig from the GUI settings. You should probably
         # store this in your Constants file
-        config = RobotConfig.fromGUISettings()
+        config = pathplannerlib.config.HolonomicPathFollowerConfig(
+            driveBaseRadius=self.constants.driveBaseRadius,
+            maxModuleSpeed=self.constants.maxModuleSpeed,
+            replanningConfig=pathplannerlib.config.ReplanningConfig(
+                enableInitialReplanning=True,
+                enableDynamicReplanning=False,
+                dynamicReplanningTotalErrorThreshold=1.0,
+                dynamicReplanningErrorSpikeThreshold=0.25
+            ),
+            rotationConstants=self.constants.rotationalPIDConstants,
+            translationConstants=self.constants.translationalPIDConstants
+        )
 
         # Configure the AutoBuilder last
         AutoBuilder.configureHolonomic(
@@ -145,7 +158,7 @@ class Drivetrain:
         self.backRight.setDesiredState(swerveModuleStates[3])
 
     def getRobotRelativeSpeeds(self):
-        return self.kinematics.toChassisSpeeds([self.frontLeft.getState(), self.frontRight.getState(), self.backLeft.getState(), self.backRight.getState()])
+        return self.kinematics.toChassisSpeeds((self.frontLeft.getState(), self.frontRight.getState(), self.backLeft.getState(), self.backRight.getState()))
 
     def shouldFlipPath(self):
         # Boolean supplier that controls when the path will be mirrored for the red alliance
