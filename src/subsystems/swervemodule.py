@@ -13,7 +13,7 @@ import wpimath.geometry
 import wpimath.controller
 import wpimath.trajectory
 
-from src.constants import Constants
+from constants import Constants
 
 
 class SwerveModule:
@@ -21,7 +21,6 @@ class SwerveModule:
         self,
         driveMotorChannel: int,
         turningMotorChannel: int,
-        driveEncoderChannel: int,
         turningEncoderChannel: int,
             constants: Constants
     ) -> None:
@@ -33,18 +32,17 @@ class SwerveModule:
         :param turningEncoderChannel:  CAN bus channel for the turning encoder channel
         """
         self.constants = constants
-        self.driveMotor = phoenix5.TalonFX(driveMotorChannel)
-        self.turningMotor = phoenix5.TalonFX(turningMotorChannel)
+        self.driveMotor = phoenix6.hardware.TalonFX(driveMotorChannel)
+        self.turningMotor = phoenix6.hardware.TalonFX(turningMotorChannel)
 
-        self.driveEncoder = phoenix6.hardware.CANcoder(driveEncoderChannel)
         self.turningEncoder = phoenix6.hardware.CANcoder(turningEncoderChannel)
 
         # Gains are for example purposes only - must be determined for your own robot!
-        self.drivePIDController = wpimath.controller.PIDController(1, 0, 0)
+        self.drivePIDController = wpimath.controller.PIDController(0.00000000001, 0, 0)
 
         # Gains are for example purposes only - must be determined for your own robot!
         self.turningPIDController = wpimath.controller.ProfiledPIDController(
-            1,
+            0.00000000001,
             0,
             0,
             wpimath.trajectory.TrapezoidProfile.Constraints(
@@ -54,8 +52,8 @@ class SwerveModule:
         )
 
         # Gains are for example purposes only - must be determined for your own robot!
-        self.driveFeedforward = wpimath.controller.SimpleMotorFeedforwardMeters(1, 3)
-        self.turnFeedforward = wpimath.controller.SimpleMotorFeedforwardMeters(1, 0.5)
+        self.driveFeedforward = wpimath.controller.SimpleMotorFeedforwardMeters(0, 0)
+        self.turnFeedforward = wpimath.controller.SimpleMotorFeedforwardMeters(0, 0)
 
         # Limit the PID Controller's input range between -pi and pi and set the input
         # to be continuous.
@@ -72,8 +70,8 @@ class SwerveModule:
         """
         # TODO: Make it get correct velocity and position
         return wpimath.kinematics.SwerveModuleState(
-            self.driveEncoder.get_velocity(),
-            wpimath.geometry.Rotation2d(self.turningEncoder.getDistance()),
+            self.driveMotor.get_velocity().value,
+            wpimath.geometry.Rotation2d(self.turningEncoder.get_absolute_position().value),
         )
 
     def getPosition(self) -> wpimath.kinematics.SwerveModulePosition:
@@ -82,8 +80,8 @@ class SwerveModule:
         :returns: The current position of the module.
         """
         return wpimath.kinematics.SwerveModulePosition(
-            self.driveEncoder.getDistance(),
-            wpimath.geometry.Rotation2d(self.turningEncoder.getDistance()),
+            self.driveMotor.get_position().value * self.constants.kWheelRadius * 2 * math.pi,
+            wpimath.geometry.Rotation2d(self.turningEncoder.get_absolute_position().value),
         )
 
     def setDesiredState(
@@ -94,7 +92,7 @@ class SwerveModule:
         :param desiredState: Desired state with speed and angle.
         """
 
-        encoderRotation = wpimath.geometry.Rotation2d(self.turningEncoder.getDistance())
+        encoderRotation = wpimath.geometry.Rotation2d(self.turningEncoder.get_absolute_position().value)
 
         # Optimize the reference state to avoid spinning further than 90 degrees
         state = wpimath.kinematics.SwerveModuleState.optimize(
@@ -108,7 +106,7 @@ class SwerveModule:
 
         # Calculate the drive output from the drive PID controller.
         driveOutput = self.drivePIDController.calculate(
-            self.driveEncoder.getRate(), state.speed
+            state.speed
         )
 
         driveFeedforward = self.driveFeedforward.calculate(state.speed)

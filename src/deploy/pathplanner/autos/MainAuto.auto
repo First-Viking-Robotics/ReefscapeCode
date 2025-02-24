@@ -13,12 +13,6 @@
                 "data": {
                   "pathName": "GoToReefA"
                 }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "ElevatorL4"
-                }
               }
             ]
           }
@@ -32,12 +26,6 @@
                 "data": {
                   "pathName": "ReefAToCoralStation"
                 }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "ElevatorRest"
-                }
               }
             ]
           }
@@ -50,12 +38,6 @@
                 "type": "path",
                 "data": {
                   "pathName": "CoralStationToReefB"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "ElevatorL4"
                 }
               }
             ]

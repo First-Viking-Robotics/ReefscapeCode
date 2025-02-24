@@ -2,16 +2,17 @@ import wpilib
 import wpimath.filter
 from pathplannerlib.auto import AutoBuilder, NamedCommands
 
-from src.subsystems import drivetrain
-from src.subsystems import elevator
+from subsystems import drivetrain
+# from subsystems import elevator
+from constants import Constants
 
 
 class RobotContainer:
-    def __init__(self, constants):
+    def __init__(self, constants=Constants()):
         self.constants = constants
         self.controller = wpilib.XboxController(0)
-        self.swerve = drivetrain.Drivetrain(self.constants)
-        self.elevator = elevator.Elevator(self.constants)
+        self.swerve = drivetrain.Drivetrain()
+        # self.elevator = elevator.Elevator()
 
         # Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
         self.xspeedLimiter = wpimath.filter.SlewRateLimiter(3)
@@ -20,23 +21,23 @@ class RobotContainer:
 
         # Example Register Named Commands
         # NamedCommands.registerCommand('autoBalance', self.swerve.autoBalanceCommand())
-        NamedCommands.registerCommand('ElevatorL1', self.elevator.goToL1())
-        NamedCommands.registerCommand('ElevatorL2', self.elevator.goToL2())
-        NamedCommands.registerCommand('ElevatorL3', self.elevator.goToL3())
-        NamedCommands.registerCommand('ElevatorL4', self.elevator.goToL4())
-        NamedCommands.registerCommand('ElevatorRest', self.elevator.goToRest())
+        # NamedCommands.registerCommand('ElevatorL1', self.elevator.goToL1())
+        # NamedCommands.registerCommand('ElevatorL2', self.elevator.goToL2())
+        # NamedCommands.registerCommand('ElevatorL3', self.elevator.goToL3())
+        # NamedCommands.registerCommand('ElevatorL4', self.elevator.goToL4())
+        # NamedCommands.registerCommand('ElevatorRest', self.elevator.goToRest())
         # NamedCommands.registerCommand('someOtherCommand', SomeOtherCommand())
 
         # Build an auto chooser. This will use Commands.none() as the default option.
-        self.autoChooser = AutoBuilder.buildAutoChooser()
+        # self.autoChooser = AutoBuilder.buildAutoChooser()
 
         # Another option that allows you to specify the default auto by its name
-        self.autoChooser = AutoBuilder.buildAutoChooser("My Default Auto")
+        # self.autoChooser = AutoBuilder.buildAutoChooser("My Default Auto")
 
-        wpilib.SmartDashboard.putData("Auto Chooser", self.autoChooser)
+        # wpilib.SmartDashboard.putData("Auto Chooser", self.autoChooser)
 
     def disable(self):
-        self.elevator.disable()
+        # self.elevator.disable()
         self.swerve.disable()
 
     def getAutonomousCommand(self):

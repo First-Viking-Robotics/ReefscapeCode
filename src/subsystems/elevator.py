@@ -11,10 +11,11 @@ import wpimath.system
 import wpimath.system.plant
 import phoenix6
 import numpy as np
+import constants
 
 
 class Elevator(commands2.Subsystem):
-    def __init__(self, constants):
+    def __init__(self, constants=constants.Constants()):
         super().__init__()
         self.constants = constants
         self.profile = wpimath.trajectory.TrapezoidProfile(

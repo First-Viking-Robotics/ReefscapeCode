@@ -6,7 +6,7 @@ import wpimath.units
 
 
 class Constants:
-    def __int__(self):
+    def __init__(self):
         # PID For autonomous movement
         self.translationalPIDConstants = pathplannerlib.config.PIDConstants(5.0, 0.0, 0.0)
         self.rotationalPIDConstants = pathplannerlib.config.PIDConstants(5.0, 0.0, 0.0)
@@ -14,7 +14,7 @@ class Constants:
         # Physical Drive Constants
         self.driveBaseRadius = 2
         self.maxModuleSpeed = 2
-        self.kMaxSpeed = 3.0  # 3 meters per second
+        self.kMaxSpeed = 1  # 1 meters per second
         self.kMaxAngularSpeed = math.pi  # 1/2 rotation per second
         self.kWheelRadius = 0.0508
         self.kEncoderResolution = 4096
@@ -67,28 +67,32 @@ class Constants:
         # Front Left Swerve Module
         self.frontLeftDriveMotorChannel = 10
         self.frontLeftTurningMotorChannel = 11
-        self.frontLeftDriveEncoderChannel = 12
-        self.frontLeftTurningEncoderChannel = 13
+        self.frontLeftTurningEncoderChannel = 12
 
         # Front Right Swerve Module
         self.frontRightDriveMotorChannel = 14
         self.frontRightTurningMotorChannel = 15
-        self.frontRightDriveEncoderChannel = 16
-        self.frontRightTurningEncoderChannel = 17
+        self.frontRightTurningEncoderChannel = 16
 
         # Back Left Swerve Module
         self.backLeftDriveMotorChannel = 18
         self.backLeftTurningMotorChannel = 19
-        self.backLeftDriveEncoderChannel = 20
-        self.backLeftTurningEncoderChannel = 21
+        self.backLeftTurningEncoderChannel = 20
 
         # back Right Swerve Module
         self.backRightDriveMotorChannel = 22
         self.backRightTurningMotorChannel = 23
-        self.backRightDriveEncoderChannel = 24
-        self.backRightTurningEncoderChannel = 25
+        self.backRightTurningEncoderChannel = 24
 
         # Elevator
         self.ElevatorFirstMotorPort = 26
         self.ElevatorSecondMotorPort = 27
-        self.ElevatorEncoderChannel = 28
+
+        # Dealgifier
+        self.DealgifierHandLeft = 29
+        self.DealgifierHandRight = 30
+        self.DealgifierBicep = 31
+
+        # Choral Scorer
+        self.ChoralScorerRight = 32
+        self.ChoralScorerLeft = 33
