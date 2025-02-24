@@ -28,26 +28,22 @@ class Drivetrain:
         self.frontLeft = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.frontLeftDriveMotorChannel,
             turningMotorChannel=self.constants.frontLeftTurningMotorChannel,
-            turningEncoderChannel=self.constants.frontLeftTurningEncoderChannel,
-            constants=self.constants
+            turningEncoderChannel=self.constants.frontLeftTurningEncoderChannel
         )
         self.frontRight = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.frontRightDriveMotorChannel,
             turningMotorChannel=self.constants.frontRightTurningMotorChannel,
-            turningEncoderChannel=self.constants.frontRightTurningEncoderChannel,
-            constants=self.constants
+            turningEncoderChannel=self.constants.frontRightTurningEncoderChannel
         )
         self.backLeft = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.backLeftDriveMotorChannel,
             turningMotorChannel=self.constants.backLeftTurningMotorChannel,
-            turningEncoderChannel=self.constants.backLeftTurningEncoderChannel,
-            constants=self.constants
+            turningEncoderChannel=self.constants.backLeftTurningEncoderChannel
         )
         self.backRight = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.backRightDriveMotorChannel,
             turningMotorChannel=self.constants.backRightTurningMotorChannel,
-            turningEncoderChannel=self.constants.backRightTurningEncoderChannel,
-            constants=self.constants
+            turningEncoderChannel=self.constants.backRightTurningEncoderChannel
         )
 
         self.gyro = wpilib.AnalogGyro(0)
