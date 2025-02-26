@@ -1,77 +1,146 @@
-import wpilib
-import wpimath.filter
-from pathplannerlib.auto import AutoBuilder, NamedCommands
+#
+# Copyright (c) FIRST and other WPILib contributors.
+# Open Source Software; you can modify and/or share it under the terms of
+# the WPILib BSD license file in the root directory of this project.
+#
 
-from subsystems import drivetrain
-# from subsystems import elevator
-from constants import Constants
+import commands2
+import commands2.button
+import commands2.cmd
+from commands2.sysid import SysIdRoutine
+
+from generated.tuner_constants import TunerConstants
+from telemetry import Telemetry
+
+from pathplannerlib.auto import AutoBuilder
+from phoenix6 import swerve
+from wpilib import SmartDashboard
+from wpimath.geometry import Rotation2d
+from wpimath.units import rotationsToRadians
 
 
 class RobotContainer:
-    def __init__(self, constants=Constants()):
-        self.constants = constants
-        self.controller = wpilib.XboxController(0)
-        self.swerve = drivetrain.Drivetrain()
-        # self.elevator = elevator.Elevator()
+    """
+    This class is where the bulk of the robot should be declared. Since Command-based is a
+    "declarative" paradigm, very little robot logic should actually be handled in the :class:`.Robot`
+    periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
+    subsystems, commands, and button mappings) should be declared here.
+    """
 
-        # Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
-        self.xspeedLimiter = wpimath.filter.SlewRateLimiter(3)
-        self.yspeedLimiter = wpimath.filter.SlewRateLimiter(3)
-        self.rotLimiter = wpimath.filter.SlewRateLimiter(3)
+    def __init__(self) -> None:
+        self._max_speed = (
+            TunerConstants.speed_at_12_volts
+        )  # speed_at_12_volts desired top speed
+        self._max_angular_rate = rotationsToRadians(
+            0.75
+        )  # 3/4 of a rotation per second max angular velocity
 
-        # Example Register Named Commands
-        # NamedCommands.registerCommand('autoBalance', self.swerve.autoBalanceCommand())
-        # NamedCommands.registerCommand('ElevatorL1', self.elevator.goToL1())
-        # NamedCommands.registerCommand('ElevatorL2', self.elevator.goToL2())
-        # NamedCommands.registerCommand('ElevatorL3', self.elevator.goToL3())
-        # NamedCommands.registerCommand('ElevatorL4', self.elevator.goToL4())
-        # NamedCommands.registerCommand('ElevatorRest', self.elevator.goToRest())
-        # NamedCommands.registerCommand('someOtherCommand', SomeOtherCommand())
-
-        # Build an auto chooser. This will use Commands.none() as the default option.
-        # self.autoChooser = AutoBuilder.buildAutoChooser()
-
-        # Another option that allows you to specify the default auto by its name
-        # self.autoChooser = AutoBuilder.buildAutoChooser("My Default Auto")
-
-        # wpilib.SmartDashboard.putData("Auto Chooser", self.autoChooser)
-
-    def disable(self):
-        # self.elevator.disable()
-        self.swerve.disable()
-
-    def getAutonomousCommand(self):
-        return self.autoChooser.getSelected()
-
-    def driveWithJoystick(self, getPeriod, fieldRelative: bool) -> None:
-        # Get the x speed. We are inverting this because Xbox controllers return
-        # negative values when we push forward.
-        xSpeed = (
-                -self.xspeedLimiter.calculate(
-                wpimath.applyDeadband(self.controller.getLeftY(), 0.02)
+        # Setting up bindings for necessary control of the swerve drive platform
+        self._drive = (
+            swerve.requests.FieldCentric()
+            .with_deadband(self._max_speed * 0.1)
+            .with_rotational_deadband(
+                self._max_angular_rate * 0.1
+            )  # Add a 10% deadband
+            .with_drive_request_type(
+                swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
+            )  # Use open-loop control for drive motors
+        )
+        self._brake = swerve.requests.SwerveDriveBrake()
+        self._point = swerve.requests.PointWheelsAt()
+        self._forward_straight = (
+            swerve.requests.RobotCentric()
+            .with_drive_request_type(
+                swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
             )
-                * self.constants.kMaxSpeed
         )
 
-        # Get the y speed or sideways/strafe speed. We are inverting this because
-        # we want a positive value when we pull to the left. Xbox controllers
-        # return positive values when you pull to the right by default.
-        ySpeed = (
-                -self.yspeedLimiter.calculate(
-                wpimath.applyDeadband(self.controller.getLeftX(), 0.02)
+        self._logger = Telemetry(self._max_speed)
+
+        self._joystick = commands2.button.CommandXboxController(0)
+
+        self.drivetrain = TunerConstants.create_drivetrain()
+
+        # Path follower
+        self._auto_chooser = AutoBuilder.buildAutoChooser("Tests")
+        SmartDashboard.putData("Auto Mode", self._auto_chooser)
+
+        # Configure the button bindings
+        self.configureButtonBindings()
+
+    def configureButtonBindings(self) -> None:
+        """
+        Use this method to define your button->command mappings. Buttons can be created by
+        instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
+        and then passing it to a JoystickButton.
+        """
+
+        # Note that X is defined as forward according to WPILib convention,
+        # and Y is defined as to the left according to WPILib convention.
+        self.drivetrain.setDefaultCommand(
+            # Drivetrain will execute this command periodically
+            self.drivetrain.apply_request(
+                lambda: (
+                    self._drive.with_velocity_x(
+                        -self._joystick.getLeftY() * self._max_speed
+                    )  # Drive forward with negative Y (forward)
+                    .with_velocity_y(
+                        -self._joystick.getLeftX() * self._max_speed
+                    )  # Drive left with negative X (left)
+                    .with_rotational_rate(
+                        -self._joystick.getRightX() * self._max_angular_rate
+                    )  # Drive counterclockwise with negative X (left)
+                )
             )
-                * self.constants.kMaxSpeed
         )
 
-        # Get the rate of angular rotation. We are inverting this because we want a
-        # positive value when we pull to the left (remember, CCW is positive in
-        # mathematics). Xbox controllers return positive values when you pull to
-        # the right by default.
-        rot = (
-                -self.rotLimiter.calculate(
-                wpimath.applyDeadband(self.controller.getRightX(), 0.02)
+        self._joystick.a().whileTrue(self.drivetrain.apply_request(lambda: self._brake))
+        self._joystick.b().whileTrue(
+            self.drivetrain.apply_request(
+                lambda: self._point.with_module_direction(
+                    Rotation2d(-self._joystick.getLeftY(), -self._joystick.getLeftX())
+                )
             )
-                * self.constants.kMaxSpeed
         )
 
-        self.swerve.drive(xSpeed, ySpeed, rot, fieldRelative, getPeriod())
+        self._joystick.pov(0).whileTrue(
+            self.drivetrain.apply_request(
+                lambda: self._forward_straight.with_velocity_x(0.5).with_velocity_y(0)
+            )
+        )
+        self._joystick.pov(180).whileTrue(
+            self.drivetrain.apply_request(
+                lambda: self._forward_straight.with_velocity_x(-0.5).with_velocity_y(0)
+            )
+        )
+
+        # Run SysId routines when holding back/start and X/Y.
+        # Note that each routine should be run exactly once in a single log.
+        (self._joystick.back() & self._joystick.y()).whileTrue(
+            self.drivetrain.sys_id_dynamic(SysIdRoutine.Direction.kForward)
+        )
+        (self._joystick.back() & self._joystick.x()).whileTrue(
+            self.drivetrain.sys_id_dynamic(SysIdRoutine.Direction.kReverse)
+        )
+        (self._joystick.start() & self._joystick.y()).whileTrue(
+            self.drivetrain.sys_id_quasistatic(SysIdRoutine.Direction.kForward)
+        )
+        (self._joystick.start() & self._joystick.x()).whileTrue(
+            self.drivetrain.sys_id_quasistatic(SysIdRoutine.Direction.kReverse)
+        )
+
+        # reset the field-centric heading on left bumper press
+        self._joystick.leftBumper().onTrue(
+            self.drivetrain.runOnce(lambda: self.drivetrain.seed_field_centric())
+        )
+
+        self.drivetrain.register_telemetry(
+            lambda state: self._logger.telemeterize(state)
+        )
+
+    def getAutonomousCommand(self) -> commands2.Command:
+        """Use this to pass the autonomous command to the main {@link Robot} class.
+
+        :returns: the command to run in autonomous
+        """
+        return self._auto_chooser.getSelected()
