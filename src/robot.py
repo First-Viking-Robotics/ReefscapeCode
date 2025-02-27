@@ -5,30 +5,23 @@
 # the WPILib BSD license file in the root directory of this project.
 #
 
-import wpilib.drive
-import wpimath
-import wpimath.units
-
 from RobotContainer import RobotContainer
-from subsystems import swervemoduleA
-import math
-import constants
+import commands2
 
 
-class MyRobot(wpilib.TimedRobot):
+class MyRobot(commands2.TimedCommandRobot):
     def robotInit(self) -> None:
         """Robot initialization function"""
-        self.container = RobotContainer()
+        self.robotContainer = RobotContainer()
 
-    def autonomousPeriodic(self) -> None:
-        self.container.driveWithJoystick(self.getPeriod, False)
-        self.container.swerve.updateOdometry()
-
-    def teleopPeriodic(self) -> None:
-        self.container.driveWithJoystick(self.getPeriod, False)
-
-    def disabledInit(self) -> None:
-        self.container.disable()
+    def robotPeriodic(self):
+        return super().robotPeriodic()
     
-    def testPeriodic(self):
-        pass
+    def disabledInit(self):
+        return super().disabledInit()
+    
+    def teleopInit(self):
+        return super().teleopInit()
+    
+    def teleopPeriodic(self):
+        return super().teleopPeriodic()

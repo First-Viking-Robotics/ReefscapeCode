@@ -3,22 +3,27 @@
 # Open Source Software; you can modify and/or share it under the terms of
 # the WPILib BSD license file in the root directory of this project.
 #
+import math
 import wpilib
 import wpimath.geometry
 import wpimath.kinematics
 from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.controller import PPHolonomicDriveController
 from pathplannerlib.config import RobotConfig, PIDConstants
+import navx
+import wpimath.units
 
 from subsystems import swervemodule
 import constants
+import commands2
 
-class Drivetrain:
+class Drivetrain(commands2.Subsystem):
     """
     Represents a swerve drive style drivetrain.
     """
 
     def __init__(self, constants=constants.Constants()) -> None:
+        super().__init__()
         self.constants = constants
         self.frontLeftLocation = self.constants.frontLeftLocation
         self.frontRightLocation = self.constants.frontRightLocation
@@ -46,121 +51,60 @@ class Drivetrain:
             turningEncoderChannel=self.constants.backRightTurningEncoderChannel
         )
 
-        self.gyro = wpilib.AnalogGyro(0)
-
-        self.kinematics = wpimath.kinematics.SwerveDrive4Kinematics(
-            self.frontLeftLocation,
-            self.frontRightLocation,
-            self.backLeftLocation,
-            self.backRightLocation,
-        )
-
-        self.odometry = wpimath.kinematics.SwerveDrive4Odometry(
-            self.kinematics,
-            self.gyro.getRotation2d(),
-            (
-                self.frontLeft.getPosition(),
-                self.frontRight.getPosition(),
-                self.backLeft.getPosition(),
-                self.backRight.getPosition(),
-            ),
-        )
+        # navX MXP using SPI
+        self.gyro = navx.AHRS(navx.AHRS.NavXComType.kMXP_SPI)
 
         self.gyro.reset()
 
-        # Load the RobotConfig from the GUI settings. You should probably
-        # store this in your Constants file
-        config = RobotConfig.fromGUISettings()
-
-        # Configure the AutoBuilder last
-        AutoBuilder.configure(
-            self.odometry.getPose,  # Robot pose supplier
-            self.odometry.resetPosition,  # Method to reset odometry (will be called if your auto has a starting pose)
-            self.getRobotRelativeSpeeds,  # ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            lambda speeds, feedforwards: self.driveRobotRelative(speeds),
-            # Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also outputs individual module feedforwards
-            PPHolonomicDriveController(
-                # PPHolonomicController is the built in path following controller for holonomic drive trains
-                self.constants.translationalPIDConstants,  # Translation PID constants
-                self.constants.rotationalPIDConstants  # Rotation PID constants
-            ),
-            config,  # The robot configuration
-            self.shouldFlipPath,  # Supplier to control path flipping based on alliance color
-            self  # Reference to this subsystem to set requirements
-        )
-
     def disable(self):
-        self.frontLeft.disable()
-        self.frontRight.disable()
-        self.backLeft.disable()
-        self.backRight.disable()
+        self.frontLeft.stop()
+        self.frontRight.stop()
+        self.backLeft.stop()
+        self.backRight.stop()
+    
+    def getHeading(self):
+        return math.remainder(self.gyro.getAngle(), 360)
+    
+    def getRotation2d(self):
+        return wpimath.geometry.Rotation2d.fromDegrees(self.getHeading())
+    
+    def periodic(self):
+        wpilib.SmartDashboard.putNumber("RobotHeading", self.getHeading())
 
-    def driveRobotRelative(self, speeds):
-        swerveModuleStates = self.kinematics.toSwerveModuleStates(
-            wpimath.kinematics.ChassisSpeeds.discretize(speeds, 0.02)
-        )
-        wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            swerveModuleStates, self.constants.kMaxSpeed
-        )
-        self.frontLeft.setDesiredState(swerveModuleStates[0])
-        self.frontRight.setDesiredState(swerveModuleStates[1])
-        self.backLeft.setDesiredState(swerveModuleStates[2])
-        self.backRight.setDesiredState(swerveModuleStates[3])
-
-
-    def drive(
-        self,
-        xSpeed: float,
-        ySpeed: float,
-        rot: float,
-        fieldRelative: bool,
-        periodSeconds: float,
-    ) -> None:
-        """
-        Method to drive the robot using joystick info.
-        :param xSpeed: Speed of the robot in the x direction (forward).
-        :param ySpeed: Speed of the robot in the y direction (sideways).
-        :param rot: Angular rate of the robot.
-        :param fieldRelative: Whether the provided x and y speeds are relative to the field.
-        :param periodSeconds: Time
-        """
-        swerveModuleStates = self.kinematics.toSwerveModuleStates(
-            wpimath.kinematics.ChassisSpeeds.discretize(
-                (
-                    wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(
-                        xSpeed, ySpeed, rot, self.gyro.getRotation2d()
-                    )
-                    if fieldRelative
-                    else wpimath.kinematics.ChassisSpeeds(xSpeed, ySpeed, rot)
-                ),
-                periodSeconds,
+    def setModuleStates(self, desiredStates: list[wpimath.kinematics.SwerveModuleState]):
+        wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(desiredStates, 1)
+        self.frontLeft.setDesiredState(desiredStates[0])
+        self.frontRight.setDesiredState(desiredStates[1])
+        self.backLeft.setDesiredState(desiredStates[2])
+        self.backRight.setDesiredState(desiredStates[3])
+    
+    def joystickDrive(self, xSpeed, ySpeed, rot):
+        # self.xspeedLimiter = wpimath.filter.SlewRateLimiter(3)
+        # self.yspeedLimiter = wpimath.filter.SlewRateLimiter(3)
+        # self.rotLimiter = wpimath.filter.SlewRateLimiter(3)
+        # xSpeed = (
+        #         -self.xspeedLimiter.calculate(
+        #         wpimath.applyDeadband(ySpeed, 0.02)
+        #     )
+        #         * 1
+        # )
+        # ySpeed = (
+        #         -self.yspeedLimiter.calculate(
+        #         wpimath.applyDeadband(xSpeed, 0.02)
+        #     )
+        #         * 1
+        # )
+        # rot = (
+        #         -self.rotLimiter.calculate(
+        #         wpimath.applyDeadband(rot, 0.02)
+        #     )
+        #         * 1
+        # )
+        if (False == True):
+            chassisSpeeds = wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(
+                xSpeed, ySpeed, rot, self.swerveSubsystem.getRotation2d()
             )
-        )
-        wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(
-            swerveModuleStates, self.constants.kMaxSpeed
-        )
-        self.frontLeft.setDesiredState(swerveModuleStates[0])
-        self.frontRight.setDesiredState(swerveModuleStates[1])
-        self.backLeft.setDesiredState(swerveModuleStates[2])
-        self.backRight.setDesiredState(swerveModuleStates[3])
-
-    def getRobotRelativeSpeeds(self):
-        return self.kinematics.toChassisSpeeds((self.frontLeft.getState(), self.frontRight.getState(), self.backLeft.getState(), self.backRight.getState()))
-
-    def shouldFlipPath(self):
-        # Boolean supplier that controls when the path will be mirrored for the red alliance
-        # This will flip the path being followed to the red side of the field.
-        # THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-        return wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed
-
-    def updateOdometry(self) -> None:
-        """Updates the field relative position of the robot."""
-        self.odometry.update(
-            self.gyro.getRotation2d(),
-            (
-                self.frontLeft.getPosition(),
-                self.frontRight.getPosition(),
-                self.backLeft.getPosition(),
-                self.backRight.getPosition(),
-            ),
-        )
+        else:
+            chassisSpeeds = wpimath.kinematics.ChassisSpeeds(xSpeed, ySpeed, rot)
+        moduleStates = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeeds)
+        self.setModuleStates(moduleStates)

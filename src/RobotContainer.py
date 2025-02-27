@@ -1,17 +1,48 @@
 import wpilib
+import wpilib.interfaces
 import wpimath.filter
 from pathplannerlib.auto import AutoBuilder, NamedCommands
 
 from subsystems import drivetrain
 # from subsystems import elevator
 from constants import Constants
+from subsystems import dealgifier
+from subsystems import coralmanipulator
+import commands2
 
 
-class RobotContainer:
+class RobotContainer():
     def __init__(self, constants=Constants()):
         self.constants = constants
-        self.controller = wpilib.XboxController(0)
+        self.controller = wpilib.interfaces.GenericHID(0)
+        self.Juanita = wpilib.interfaces.GenericHID(1)
+
         self.swerve = drivetrain.Drivetrain()
+        self.swerve.setDefaultCommand(
+            commands2.RunCommand(
+                lambda: self.swerve.joystickDrive(self.controller.getRawAxis(0) * 0.25, self.controller.getRawAxis(4) * 0.25, -self.controller.getRawAxis(1) * 0.25),
+                self.swerve)
+        )
+
+        self.dealgifier = dealgifier.Dealgifier(30, 29)
+        self.dealgifier.setDefaultCommand(
+            commands2.RunCommand(
+                lambda: self.dealgifier.handle(
+                    self.Juanita.getRawButton(self.constants.JuanitaButtons.Algy)
+                ),
+                self.dealgifier
+            )
+        )
+
+        self.choralscorer = coralmanipulator.CoralScorer(32, 33)
+        self.choralscorer.setDefaultCommand(
+            commands2.RunCommand(
+                lambda: self.choralscorer.handle(
+                    self.Juanita.getRawButton(self.constants.JuanitaButtons.Choral)
+                ),
+                self.choralscorer
+            )
+        )
         # self.elevator = elevator.Elevator()
 
         # Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
@@ -42,36 +73,3 @@ class RobotContainer:
 
     def getAutonomousCommand(self):
         return self.autoChooser.getSelected()
-
-    def driveWithJoystick(self, getPeriod, fieldRelative: bool) -> None:
-        # Get the x speed. We are inverting this because Xbox controllers return
-        # negative values when we push forward.
-        xSpeed = (
-                -self.xspeedLimiter.calculate(
-                wpimath.applyDeadband(self.controller.getLeftY(), 0.02)
-            )
-                * self.constants.kMaxSpeed
-        )
-
-        # Get the y speed or sideways/strafe speed. We are inverting this because
-        # we want a positive value when we pull to the left. Xbox controllers
-        # return positive values when you pull to the right by default.
-        ySpeed = (
-                -self.yspeedLimiter.calculate(
-                wpimath.applyDeadband(self.controller.getLeftX(), 0.02)
-            )
-                * self.constants.kMaxSpeed
-        )
-
-        # Get the rate of angular rotation. We are inverting this because we want a
-        # positive value when we pull to the left (remember, CCW is positive in
-        # mathematics). Xbox controllers return positive values when you pull to
-        # the right by default.
-        rot = (
-                -self.rotLimiter.calculate(
-                wpimath.applyDeadband(self.controller.getRightX(), 0.02)
-            )
-                * self.constants.kMaxSpeed
-        )
-
-        self.swerve.drive(xSpeed, ySpeed, rot, fieldRelative, getPeriod())

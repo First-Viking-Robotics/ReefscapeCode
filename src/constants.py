@@ -2,6 +2,7 @@ import math
 
 import pathplannerlib.config
 import wpimath.geometry
+import wpimath.kinematics
 import wpimath.units
 
 
@@ -25,9 +26,28 @@ class Constants:
         self.frontRightLocation = wpimath.geometry.Translation2d(globalDistance, -globalDistance)
         self.backLeftLocation = wpimath.geometry.Translation2d(-globalDistance, globalDistance)
         self.backRightLocation = wpimath.geometry.Translation2d(-globalDistance, -globalDistance)
+        self.swerveDriveKinematics = wpimath.kinematics.SwerveDrive4Kinematics(
+            self.frontLeftLocation,
+            self.frontRightLocation,
+            self.backLeftLocation,
+            self.backRightLocation
+        )
 
         # Physical Elevator Constants
         self.ElevatorJoystickPort = 0
+
+        # Juanita Buttons
+
+        class JuanitaButtons:
+            def __init__(self):
+                self.L1 = 5
+                self.L2 = 1
+                self.L3 = 2
+                self.L4 = 4
+                self.Choral = 3
+                self.Algy = 6
+
+        self.JuanitaButtons = JuanitaButtons()
 
         # Elevator Goal Positions
         self.ElevatorRest = wpimath.units.feetToMeters(1.5)
