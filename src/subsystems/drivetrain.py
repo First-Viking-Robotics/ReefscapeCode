@@ -5,12 +5,14 @@
 #
 import math
 import wpilib
+import wpimath.filter
 import wpimath.geometry
 import wpimath.kinematics
 from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.controller import PPHolonomicDriveController
 from pathplannerlib.config import RobotConfig, PIDConstants
 import navx
+import phoenix6
 import wpimath.units
 
 from subsystems import swervemodule
@@ -33,28 +35,42 @@ class Drivetrain(commands2.Subsystem):
         self.frontLeft = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.frontLeftDriveMotorChannel,
             turningMotorChannel=self.constants.frontLeftTurningMotorChannel,
-            turningEncoderChannel=self.constants.frontLeftTurningEncoderChannel
+            turningEncoderChannel=self.constants.frontLeftTurningEncoderChannel,
+            offset=-45
         )
         self.frontRight = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.frontRightDriveMotorChannel,
             turningMotorChannel=self.constants.frontRightTurningMotorChannel,
-            turningEncoderChannel=self.constants.frontRightTurningEncoderChannel
+            turningEncoderChannel=self.constants.frontRightTurningEncoderChannel,
+            offset=45
         )
         self.backLeft = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.backLeftDriveMotorChannel,
             turningMotorChannel=self.constants.backLeftTurningMotorChannel,
-            turningEncoderChannel=self.constants.backLeftTurningEncoderChannel
+            turningEncoderChannel=self.constants.backLeftTurningEncoderChannel,
+            offset=45
         )
         self.backRight = swervemodule.SwerveModule(
             driveMotorChannel=self.constants.backRightDriveMotorChannel,
             turningMotorChannel=self.constants.backRightTurningMotorChannel,
-            turningEncoderChannel=self.constants.backRightTurningEncoderChannel
+            turningEncoderChannel=self.constants.backRightTurningEncoderChannel,
+            offset=-45
         )
 
         # navX MXP using SPI
-        self.gyro = navx.AHRS(navx.AHRS.NavXComType.kMXP_SPI)
+        # self.gyro = navx.AHRS(navx.AHRS.NavXComType.kMXP_SPI)
+        self.gyro = phoenix6.hardware.pigeon2.Pigeon2(self.constants.pigeonChannel)
 
-        self.gyro.reset()
+        self.gyro.set_yaw(0)
+
+        self.odometry = wpimath.kinematics.SwerveDrive4Odometry(self.constants.swerveDriveKinematics, self.getRotation2d(),
+                                                    (
+                                                        self.frontLeft.getPosition(),
+                                                        self.frontRight.getPosition(),
+                                                        self.backLeft.getPosition(),
+                                                        self.backRight.getPosition()
+                                                    )
+                                                )
 
     def disable(self):
         self.frontLeft.stop()
@@ -63,7 +79,7 @@ class Drivetrain(commands2.Subsystem):
         self.backRight.stop()
     
     def getHeading(self):
-        return math.remainder(self.gyro.getAngle(), 360)
+        return math.remainder(self.gyro.get_yaw().value, 360)
     
     def getRotation2d(self):
         return wpimath.geometry.Rotation2d.fromDegrees(self.getHeading())
@@ -71,40 +87,75 @@ class Drivetrain(commands2.Subsystem):
     def periodic(self):
         wpilib.SmartDashboard.putNumber("RobotHeading", self.getHeading())
 
-    def setModuleStates(self, desiredStates: list[wpimath.kinematics.SwerveModuleState]):
-        wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(desiredStates, 1)
-        self.frontLeft.setDesiredState(desiredStates[0])
-        self.frontRight.setDesiredState(desiredStates[1])
-        self.backLeft.setDesiredState(desiredStates[2])
-        self.backRight.setDesiredState(desiredStates[3])
+    def setModuleStates(self, desiredStatesTrans: list[wpimath.kinematics.SwerveModuleState], desiredStatesRot: list[wpimath.kinematics.SwerveModuleState]):
+        wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(desiredStatesTrans, 1)
+        # if rotating:
+        self.frontLeft.setDesiredState(desiredStatesTrans[0], desiredStatesRot[0], -1)
+        self.frontRight.setDesiredState(desiredStatesTrans[1], desiredStatesRot[1], 1)
+        self.backLeft.setDesiredState(desiredStatesTrans[2], desiredStatesRot[2], 1)
+        self.backRight.setDesiredState(desiredStatesTrans[3], desiredStatesRot[3], -1)
+        # else:
+        #     self.frontLeft.setDesiredState(desiredStates[0], 1)
+        #     self.frontRight.setDesiredState(desiredStates[1], 1)
+        #     self.backLeft.setDesiredState(desiredStates[2], 1)
+        #     self.backRight.setDesiredState(desiredStates[3], 1)
     
-    def joystickDrive(self, xSpeed, ySpeed, rot):
-        # self.xspeedLimiter = wpimath.filter.SlewRateLimiter(3)
-        # self.yspeedLimiter = wpimath.filter.SlewRateLimiter(3)
-        # self.rotLimiter = wpimath.filter.SlewRateLimiter(3)
+    def joystickDrive(self, xSpeed: float, ySpeed: float, rot: float, notFieldCentric: bool):
+        self.xspeedLimiter = wpimath.filter.SlewRateLimiter(0.25)
+        self.yspeedLimiter = wpimath.filter.SlewRateLimiter(0.25)
+        self.rotLimiter = wpimath.filter.SlewRateLimiter(0.25)
         # xSpeed = (
-        #         -self.xspeedLimiter.calculate(
-        #         wpimath.applyDeadband(ySpeed, 0.02)
+        #         self.xspeedLimiter.calculate(
+        #         wpimath.applyDeadband(ySpeed, 0.02, 1)
         #     )
-        #         * 1
         # )
         # ySpeed = (
-        #         -self.yspeedLimiter.calculate(
-        #         wpimath.applyDeadband(xSpeed, 0.02)
+        #         self.yspeedLimiter.calculate(
+        #         wpimath.applyDeadband(xSpeed, 0.02, 1)
         #     )
-        #         * 1
         # )
         # rot = (
-        #         -self.rotLimiter.calculate(
-        #         wpimath.applyDeadband(rot, 0.02)
+        #         self.rotLimiter.calculate(
+        #         wpimath.applyDeadband(rot, 0.02, 1)
         #     )
-        #         * 1
         # )
-        if (False == True):
-            chassisSpeeds = wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(
-                xSpeed, ySpeed, rot, self.swerveSubsystem.getRotation2d()
+        FieldCentric = not notFieldCentric
+        
+        if FieldCentric:
+            chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(
+                xSpeed, ySpeed, 0, self.getRotation2d()
             )
+            moduleStatesTrans = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsTrans)
+            chassisSpeedsRot = wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(
+                0, 0, rot, self.getRotation2d()
+            )
+            moduleStatesRot = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsRot)
         else:
-            chassisSpeeds = wpimath.kinematics.ChassisSpeeds(xSpeed, ySpeed, rot)
-        moduleStates = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeeds)
-        self.setModuleStates(moduleStates)
+            chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds(xSpeed, ySpeed, 0)
+            moduleStatesTrans = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsTrans)
+            chassisSpeedsRot = wpimath.kinematics.ChassisSpeeds(0, 0, rot)
+            moduleStatesRot = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsRot)
+    
+    def drive(self, chassisSpeeds: wpimath.kinematics.ChassisSpeeds):
+        chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds(chassisSpeeds.vx, chassisSpeeds.vy, 0)
+        moduleStatesTrans = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsTrans)
+        chassisSpeedsRot = wpimath.kinematics.ChassisSpeeds(0, 0, chassisSpeeds.omega)
+        moduleStatesRot = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsRot)
+        self.setModuleStates(moduleStatesTrans, moduleStatesRot)
+
+    def resetPose(self, pose):
+        return self.odometry.resetPose(pose)
+    
+    def getModuleStates(self):
+        return (
+                self.frontLeft.getState(),
+                self.frontRight.getState(),
+                self.backLeft.getState(),
+                self.backRight.getState()
+            )
+
+    def getRobotRelativeSpeeds(self):
+        return self.constants.swerveDriveKinematics.toChassisSpeeds(self.getModuleStates())
+    
+    def getPose(self):
+        return self.odometry.getPose()

@@ -4,7 +4,7 @@ import wpimath.filter
 from pathplannerlib.auto import AutoBuilder, NamedCommands
 
 from subsystems import drivetrain
-# from subsystems import elevator
+from subsystems import elevator
 from constants import Constants
 from subsystems import dealgifier
 from subsystems import coralmanipulator
@@ -20,19 +20,19 @@ class RobotContainer():
         self.swerve = drivetrain.Drivetrain()
         self.swerve.setDefaultCommand(
             commands2.RunCommand(
-                lambda: self.swerve.joystickDrive(self.controller.getRawAxis(0) * 0.25, self.controller.getRawAxis(4) * 0.25, -self.controller.getRawAxis(1) * 0.25),
+                lambda: self.swerve.joystickDrive(self.controller.getRawAxis(0) * self.constants.kMaxSpeed, -self.controller.getRawAxis(1) * -self.constants.kMaxSpeed, self.controller.getRawAxis(4) * self.constants.kMaxAngularSpeed, self.controller.getRawButton(1)),
                 self.swerve)
         )
 
-        self.dealgifier = dealgifier.Dealgifier(30, 29)
-        self.dealgifier.setDefaultCommand(
-            commands2.RunCommand(
-                lambda: self.dealgifier.handle(
-                    self.Juanita.getRawButton(self.constants.JuanitaButtons.Algy)
-                ),
-                self.dealgifier
-            )
-        )
+        # self.dealgifier = dealgifier.Dealgifier(30, 29)
+        # self.dealgifier.setDefaultCommand(
+        #     commands2.RunCommand(
+        #         lambda: self.dealgifier.handle(
+        #             self.Juanita.getRawButton(self.constants.JuanitaButtons.Algy)
+        #         ),
+        #         self.dealgifier
+        #     )
+        # )
 
         self.choralscorer = coralmanipulator.CoralScorer(32, 33)
         self.choralscorer.setDefaultCommand(
@@ -43,12 +43,14 @@ class RobotContainer():
                 self.choralscorer
             )
         )
-        # self.elevator = elevator.Elevator()
 
-        # Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
-        self.xspeedLimiter = wpimath.filter.SlewRateLimiter(3)
-        self.yspeedLimiter = wpimath.filter.SlewRateLimiter(3)
-        self.rotLimiter = wpimath.filter.SlewRateLimiter(3)
+        # self.elevator = elevator.Elevator()
+        # self.elevator.setDefaultCommand(
+        #     commands2.RunCommand(
+        #         lambda: self.elevator.periodic(),
+        #         self.elevator
+        #     )
+        # )
 
         # Example Register Named Commands
         # NamedCommands.registerCommand('autoBalance', self.swerve.autoBalanceCommand())

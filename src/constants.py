@@ -15,8 +15,8 @@ class Constants:
         # Physical Drive Constants
         self.driveBaseRadius = 2
         self.maxModuleSpeed = 2
-        self.kMaxSpeed = 1  # 1 meters per second
-        self.kMaxAngularSpeed = math.pi  # 1/2 rotation per second
+        self.kMaxSpeed = 0.75  # 1 meters per second
+        self.kMaxAngularSpeed = 1
         self.kWheelRadius = 0.0508
         self.kEncoderResolution = 4096
         self.kModuleMaxAngularVelocity = math.pi
@@ -43,9 +43,9 @@ class Constants:
                 self.L1 = 5
                 self.L2 = 1
                 self.L3 = 2
-                self.L4 = 4
-                self.Choral = 3
-                self.Algy = 6
+                self.L4 = 6
+                self.Choral = 3  # Correct
+                self.Algy = 4  # Correct
 
         self.JuanitaButtons = JuanitaButtons()
 
@@ -56,8 +56,8 @@ class Constants:
         self.ElevatorL3 = wpimath.units.feetToMeters(3)
         self.ElevatorL4 = wpimath.units.feetToMeters(4)
 
-        self.ElevatorMaxVelocity = wpimath.units.feetToMeters(3)
-        self.ElevatorMaxAccel = wpimath.units.feetToMeters(6)
+        self.ElevatorMaxVelocity = wpimath.units.rotationsToRadians(0.5)
+        self.ElevatorMaxAccel = wpimath.units.rotationsToRadians(0.25)
 
         self.ElevatorPositionErrorTolerance = wpimath.units.inchesToMeters(1.0)
         self.ElevatorVelocityErrorTolerance = wpimath.units.inchesToMeters(10.0)
@@ -82,7 +82,14 @@ class Constants:
         # the motors, this number should be greater than one.
         self.ElevatorGearing = 6.88
 
+        # --- DealgifierBicep ---
+        self.DABMaxVelocity = wpimath.units.rotationsToRadians(0.5)
+        self.DABMaxAccel = wpimath.units.rotationsToRadians(0.25)
+
         # --- CAN Identification Numbers ---
+
+        # Pigeon
+        self.pigeonChannel = 5
 
         # Front Left Swerve Module
         self.frontLeftDriveMotorChannel = 10

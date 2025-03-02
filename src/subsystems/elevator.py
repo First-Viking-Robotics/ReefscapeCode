@@ -3,14 +3,13 @@ import math
 import commands2
 import rev
 import wpilib
+import wpilib.shuffleboard
 import wpimath.controller
 import wpimath.estimator
 import wpimath.units
 import wpimath.trajectory
 import wpimath.system
 import wpimath.system.plant
-import phoenix6
-import numpy as np
 import constants
 
 
@@ -25,78 +24,39 @@ class Elevator(commands2.Subsystem):
             )
         )
 
-        self.lastProfiledReference = wpimath.trajectory.TrapezoidProfile.State()
-
-        # The plant holds a state-space model of our elevator. This system has the following properties:
-
-        # States: [position, velocity], in meters and meters per second.
-        # Inputs (what we can "put in"): [voltage], in volts.
-        # Outputs (what we can measure): [position], in meters.
-
-        # This elevator is driven by two NEO motors.
-        self.elevatorPlant = wpimath.system.plant.LinearSystemId.elevatorSystem(
-            wpimath.system.plant.DCMotor.NEO(2),
-            self.constants.ElevatorCarriageMass,
-            self.constants.ElevatorDrumRadius,
-            self.constants.ElevatorGearing,
+        self.PIDController = wpimath.controller.ProfiledPIDController(
+            0.6, 0, 0, wpimath.trajectory.TrapezoidProfile.Constraints(
+                self.constants.ElevatorMaxVelocity,
+                self.constants.ElevatorMaxAccel
+            )
         )
 
-        # The observer fuses our encoder data and voltage inputs to reject noise.
-        self.observer = wpimath.estimator.KalmanFilter_2_1_1(
-            self.elevatorPlant,
-            (
-                wpimath.units.inchesToMeters(2),
-                wpimath.units.inchesToMeters(40),
-            ),  # How accurate we think our model is, in meters and meters/second.
-            (
-                0.001,
-            ),
-            # How accurate we think our encoder position data is. In this case we very highly trust our encoder position reading.
-            0.020,
-        )
-
-        # A LQR uses feedback to create voltage commands.
-        self.controller = wpimath.controller.LinearQuadraticRegulator_2_1(
-            self.elevatorPlant,
-            (
-                self.constants.ElevatorPositionErrorTolerance,
-                self.constants.ElevatorVelocityErrorTolerance
-            ),
-            self.constants.ElevatorControlEffortTolerance,
-            self.constants.ElevatorNominalLoopTime
-        )
-
-        # The state-space loop combines a controller, observer, feedforward and plant for easy control.
-        self.loop = wpimath.system.LinearSystemLoop_2_1_1(
-            self.elevatorPlant, self.controller, self.observer, 12.0, 0.020
-        )
+        self.motorFirst = rev.SparkMax(self.constants.ElevatorFirstMotorPort, rev.SparkMax.MotorType.kBrushless)
+        self.motorSecond = rev.SparkMax(self.constants.ElevatorSecondMotorPort, rev.SparkMax.MotorType.kBrushless)
 
         # An encoder set up to measure flywheel velocity in radians per second.
-        self.encoder = phoenix6.hardware.CANcoder(self.constants.ElevatorEncoderChannel)
+        self.encoder = self.motorFirst.getAlternateEncoder()
 
-        self.motorFirst = rev.CANSparkMax(self.constants.ElevatorFirstMotorPort, rev.CANSparkMax.MotorType.kBrushless)
-        self.motorSecond = rev.CANSparkMax(self.constants.ElevatorSecondMotorPort, rev.CANSparkMax.MotorType.kBrushless)
-
-        # A joystick to read the trigger from.
-        self.joystick = wpilib.Joystick(self.constants.ElevatorJoystickPort)
-
-        # Circumference = pi * d, so distance per click = pi * d / counts
-        self.distancePerRotation = math.tau * self.constants.ElevatorDrumRadius
+        self.PIDController.reset(
+            measuredPosition=self.encoder.getPosition(),
+            measuredVelocity=self.encoder.getVelocity()
+        )
 
         # Preset Goal
         self.goal = self.constants.ElevatorRest
 
+        # Disable Motors at Start
+        self.disable()
+        self.encoder.setPosition(0)
+
+        wpilib.SmartDashboard.putNumber("Elevator Goal", 0)
+
     def initMovement(self) -> None:
-        # Reset our loop to make sure it's in a known state.
-        self.loop.reset(np.array([
-            (self.encoder.get_position().value * self.distancePerRotation),
-            (self.encoder.get_velocity().value * self.distancePerRotation)
-        ]))
 
         # Reset our last reference to the current state.
         self.lastProfiledReference = wpimath.trajectory.TrapezoidProfile.State(
-            (self.encoder.get_position().value * self.distancePerRotation),
-            (self.encoder.get_velocity().value * self.distancePerRotation)
+            self.encoder.getPosition(),
+            wpimath.units.rotationsPerMinuteToRadiansPerSecond(self.encoder.getVelocity())
         )
 
     def goToL1(self):
@@ -137,32 +97,20 @@ class Elevator(commands2.Subsystem):
         # Sets the target position of our arm. This is similar to setting the setpoint of a
         # PID controller.
 
-        goal = wpimath.trajectory.TrapezoidProfile.State(self.goal, 0.0)
-
-        # Step our TrapezoidalProfile forward 20ms and set it as our next reference
-        self.lastProfiledReference = self.profile.calculate(
-            0.020, self.lastProfiledReference, goal
-        )
-        self.loop.setNextR(
-            np.array([self.lastProfiledReference.position, self.lastProfiledReference.velocity])
+        percentageOutput = self.PIDController.calculate(
+            self.encoder.getPosition(),
+            wpilib.SmartDashboard.getNumber("Elevator Goal", 0)
         )
 
-        # Correct our Kalman filter's state vector estimate with encoder data.
-        self.loop.correct(np.array([(self.encoder.get_position().value * self.distancePerRotation)]))
+        wpilib.SmartDashboard.putNumber("Elevator Position", self.encoder.getPosition())
+        wpilib.SmartDashboard.putNumber("Elevator PowerOutput", percentageOutput)
 
-        # Update our LQR to generate new voltage commands and use the voltages to predict the next
-        # state with out Kalman filter.
-        self.loop.predict(0.020)
-
-        # Send the new calculated voltage to the motors.
-        # voltage = duty cycle * battery voltage, so
-        # duty cycle = voltage / battery voltage
-        nextVoltage = self.loop.U(0)
-        self.motorFirst.setVoltage(nextVoltage)
-        self.motorSecond.setVoltage(nextVoltage)
+        # wpimath.filter.SlewRateLimiter(3)
+        self.motorFirst.set((percentageOutput + 0.14) * -0.75)
+        self.motorSecond.set((percentageOutput + 0.14) * -0.75)
 
     def atGoal(self):
-        return ((self.encoder.get_position().value * self.distancePerRotation) == self.goal) and ((self.encoder.get_velocity().value * self.distancePerRotation) == 0)
+        return (self.encoder.getPosition() == self.goal) and (self.encoder.getVelocity() == 0)
 
 
 class ElevatorToL1(commands2.Command):
