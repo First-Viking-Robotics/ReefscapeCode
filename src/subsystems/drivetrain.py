@@ -122,24 +122,6 @@ class Drivetrain(commands2.Subsystem):
         #     self.backRight.setDesiredState(desiredStates[3], 1)
     
     def joystickDrive(self, xSpeed: float, ySpeed: float, rot: float, notFieldCentric: bool, forward: bool, slowMode: bool):
-        self.xspeedLimiter = wpimath.filter.SlewRateLimiter(0.25)
-        self.yspeedLimiter = wpimath.filter.SlewRateLimiter(0.25)
-        self.rotLimiter = wpimath.filter.SlewRateLimiter(0.25)
-        # xSpeed = (
-        #         self.xspeedLimiter.calculate(
-        #         wpimath.applyDeadband(ySpeed, 0.02, 1)
-        #     )
-        # )
-        # ySpeed = (
-        #         self.yspeedLimiter.calculate(
-        #         wpimath.applyDeadband(xSpeed, 0.02, 1)
-        #     )
-        # )
-        # rot = (
-        #         self.rotLimiter.calculate(
-        #         wpimath.applyDeadband(rot, 0.02, 1)
-        #     )
-        # )
         FieldCentric = not notFieldCentric
 
         if slowMode:
