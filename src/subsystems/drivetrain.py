@@ -11,13 +11,15 @@ import wpimath.kinematics
 from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.controller import PPHolonomicDriveController
 from pathplannerlib.config import RobotConfig, PIDConstants
-import navx
 import phoenix6
 import wpimath.units
 
 from subsystems import swervemodule
 import constants
 import commands2
+from pathplannerlib.auto import AutoBuilder
+from pathplannerlib.config import RobotConfig, PIDConstants
+from pathplannerlib.controller import PPHolonomicDriveController
 
 class Drivetrain(commands2.Subsystem):
     """
@@ -71,6 +73,25 @@ class Drivetrain(commands2.Subsystem):
                                                         self.backRight.getPosition()
                                                     )
                                                 )
+        
+        config = RobotConfig.fromGUISettings()
+        
+        AutoBuilder.configure(
+            self.getPose,
+            self.resetPose,
+            self.getRobotRelativeSpeeds,
+            lambda speeds, feedforwards: self.drive(speeds),
+            PPHolonomicDriveController(
+                PIDConstants(0.01, 0.0, 0.0),
+                PIDConstants(0.01, 0.0, 0.0)
+            ),
+            config,
+            self.shouldFlipPath,
+            self
+        )
+    
+    def shouldFlipPath(self):
+        return wpilib.DriverStation.getAlliance()
 
     def disable(self):
         self.frontLeft.stop()
@@ -100,7 +121,7 @@ class Drivetrain(commands2.Subsystem):
         #     self.backLeft.setDesiredState(desiredStates[2], 1)
         #     self.backRight.setDesiredState(desiredStates[3], 1)
     
-    def joystickDrive(self, xSpeed: float, ySpeed: float, rot: float, notFieldCentric: bool):
+    def joystickDrive(self, xSpeed: float, ySpeed: float, rot: float, notFieldCentric: bool, forward: bool, slowMode: bool):
         self.xspeedLimiter = wpimath.filter.SlewRateLimiter(0.25)
         self.yspeedLimiter = wpimath.filter.SlewRateLimiter(0.25)
         self.rotLimiter = wpimath.filter.SlewRateLimiter(0.25)
@@ -120,6 +141,10 @@ class Drivetrain(commands2.Subsystem):
         #     )
         # )
         FieldCentric = not notFieldCentric
+
+        if slowMode:
+            xSpeed = xSpeed * 0.1
+            ySpeed = ySpeed * 0.1
         
         if FieldCentric:
             chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -130,11 +155,13 @@ class Drivetrain(commands2.Subsystem):
                 0, 0, rot, self.getRotation2d()
             )
             moduleStatesRot = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsRot)
+            self.setModuleStates(moduleStatesTrans, moduleStatesRot)
         else:
             chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds(xSpeed, ySpeed, 0)
             moduleStatesTrans = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsTrans)
             chassisSpeedsRot = wpimath.kinematics.ChassisSpeeds(0, 0, rot)
             moduleStatesRot = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsRot)
+            self.setModuleStates(moduleStatesTrans, moduleStatesRot)
     
     def drive(self, chassisSpeeds: wpimath.kinematics.ChassisSpeeds):
         chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds(chassisSpeeds.vx, chassisSpeeds.vy, 0)

@@ -1,7 +1,7 @@
 import wpilib
 import wpilib.interfaces
 import wpimath.filter
-from pathplannerlib.auto import AutoBuilder, NamedCommands
+from pathplannerlib.auto import AutoBuilder, NamedCommands, PathPlannerAuto
 
 from subsystems import drivetrain
 from subsystems import elevator
@@ -20,7 +20,13 @@ class RobotContainer():
         self.swerve = drivetrain.Drivetrain()
         self.swerve.setDefaultCommand(
             commands2.RunCommand(
-                lambda: self.swerve.joystickDrive(self.controller.getRawAxis(0) * self.constants.kMaxSpeed, -self.controller.getRawAxis(1) * -self.constants.kMaxSpeed, self.controller.getRawAxis(4) * self.constants.kMaxAngularSpeed, self.controller.getRawButton(1)),
+                lambda: self.swerve.joystickDrive(
+                    self.controller.getRawAxis(0) * self.constants.kMaxSpeed,
+                    -self.controller.getRawAxis(1) * -self.constants.kMaxSpeed,
+                    self.controller.getRawAxis(4) * self.constants.kMaxAngularSpeed,
+                    not self.controller.getRawButton(1),
+                    self.controller.getRawButton(2),
+                    self.controller.getRawButton(6)),
                 self.swerve)
         )
 
@@ -44,13 +50,13 @@ class RobotContainer():
             )
         )
 
-        # self.elevator = elevator.Elevator()
-        # self.elevator.setDefaultCommand(
-        #     commands2.RunCommand(
-        #         lambda: self.elevator.periodic(),
-        #         self.elevator
-        #     )
-        # )
+        self.elevator = elevator.Elevator()
+        self.elevator.setDefaultCommand(
+            commands2.RunCommand(
+                lambda: self.elevator.periodic(),
+                self.elevator
+            )
+        )
 
         # Example Register Named Commands
         # NamedCommands.registerCommand('autoBalance', self.swerve.autoBalanceCommand())
@@ -60,18 +66,19 @@ class RobotContainer():
         # NamedCommands.registerCommand('ElevatorL4', self.elevator.goToL4())
         # NamedCommands.registerCommand('ElevatorRest', self.elevator.goToRest())
         # NamedCommands.registerCommand('someOtherCommand', SomeOtherCommand())
-
-        # Build an auto chooser. This will use Commands.none() as the default option.
-        # self.autoChooser = AutoBuilder.buildAutoChooser()
+        NamedCommands.registerCommand('SpitCoral', self.choralscorer.getSpitCoralCommand())  # self.choralscorer.getSpitCoralCommand()
 
         # Another option that allows you to specify the default auto by its name
-        # self.autoChooser = AutoBuilder.buildAutoChooser("My Default Auto")
+        self.autoChooser = AutoBuilder.buildAutoChooser("Main Auto")
 
-        # wpilib.SmartDashboard.putData("Auto Chooser", self.autoChooser)
+        wpilib.SmartDashboard.putData("Auto Chooser", self.autoChooser)
+    
+    def runAuto(self):
+        self.getAutonomousCommand().schedule()
 
     def disable(self):
         # self.elevator.disable()
         self.swerve.disable()
 
-    def getAutonomousCommand(self):
+    def getAutonomousCommand(self) -> commands2.Command:
         return self.autoChooser.getSelected()

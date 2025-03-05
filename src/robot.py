@@ -5,23 +5,15 @@
 # the WPILib BSD license file in the root directory of this project.
 #
 
-from RobotContainer import RobotContainer
+import RobotContainer
 import commands2
 
 
 class MyRobot(commands2.TimedCommandRobot):
     def robotInit(self) -> None:
         """Robot initialization function"""
-        self.robotContainer = RobotContainer()
+        self.robotContainer = RobotContainer.RobotContainer()
 
-    def robotPeriodic(self):
-        return super().robotPeriodic()
-    
-    def disabledInit(self):
-        return super().disabledInit()
-    
-    def teleopInit(self):
-        return super().teleopInit()
-    
-    def teleopPeriodic(self):
-        return super().teleopPeriodic()
+    def autonomousInit(self):
+        self.robotContainer.runAuto()
+        return super().autonomousInit()

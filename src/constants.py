@@ -15,8 +15,8 @@ class Constants:
         # Physical Drive Constants
         self.driveBaseRadius = 2
         self.maxModuleSpeed = 2
-        self.kMaxSpeed = 0.75  # 1 meters per second
-        self.kMaxAngularSpeed = 1
+        self.kMaxSpeed = 1  # 1 meters per second
+        self.kMaxAngularSpeed = 1.25
         self.kWheelRadius = 0.0508
         self.kEncoderResolution = 4096
         self.kModuleMaxAngularVelocity = math.pi

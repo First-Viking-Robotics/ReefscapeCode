@@ -33,6 +33,8 @@ class Elevator(commands2.Subsystem):
 
         self.motorFirst = rev.SparkMax(self.constants.ElevatorFirstMotorPort, rev.SparkMax.MotorType.kBrushless)
         self.motorSecond = rev.SparkMax(self.constants.ElevatorSecondMotorPort, rev.SparkMax.MotorType.kBrushless)
+        self.motorFirst.setVoltage(12)
+        self.motorSecond.setVoltage(12)
 
         # An encoder set up to measure flywheel velocity in radians per second.
         self.encoder = self.motorFirst.getAlternateEncoder()
@@ -103,11 +105,11 @@ class Elevator(commands2.Subsystem):
         )
 
         wpilib.SmartDashboard.putNumber("Elevator Position", self.encoder.getPosition())
-        wpilib.SmartDashboard.putNumber("Elevator PowerOutput", percentageOutput)
+        wpilib.SmartDashboard.putNumber("Elevator PowerOutput", (percentageOutput + 0.1) * 0.75)
 
         # wpimath.filter.SlewRateLimiter(3)
-        self.motorFirst.set((percentageOutput + 0.14) * -0.75)
-        self.motorSecond.set((percentageOutput + 0.14) * -0.75)
+        self.motorFirst.getClosedLoopController().setReference((percentageOutput + 0.1) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
+        self.motorSecond.getClosedLoopController().setReference((percentageOutput + 0.1) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
 
     def atGoal(self):
         return (self.encoder.getPosition() == self.goal) and (self.encoder.getVelocity() == 0)

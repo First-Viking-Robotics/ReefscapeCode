@@ -40,7 +40,7 @@ class SwerveModule:
 
         # Gains are for example purposes only - must be determined for your own robot!
         self.turningPIDController = wpimath.controller.PIDController(
-            0.25,
+            0.05,
             0,
             0
         )

@@ -5,6 +5,9 @@
 #
 import commands2
 import rev
+import wpilib
+import wpimath
+import wpimath.units
 
 class CoralScorer(commands2.Subsystem):
     def __init__(self, rightMotorChannel: int, leftMotorChannel: int):
@@ -29,3 +32,18 @@ class CoralScorer(commands2.Subsystem):
             self.shoot()
         else:
             self.stop()
+    
+    def getSpitCoralCommand(self):
+        # commands2.PrintCommand()
+        return SpitCoral(self)
+
+
+class SpitCoral(commands2.Command):
+    def __init__(self, coralScorer: CoralScorer):
+        super().__init__()
+        self._sub = coralScorer
+        self.addRequirements(self._sub)
+
+    def execute(self):
+        self._sub.leftMotor.set(-0.1)
+        self._sub.rightMotor.set(0.1)
