@@ -21,7 +21,7 @@ class Constants:
         self.kEncoderResolution = 4096
         self.kModuleMaxAngularVelocity = math.pi
         self.kModuleMaxAngularAcceleration = math.tau
-        globalDistance = 0.3143758
+        globalDistance = 0.635
         self.frontLeftLocation = wpimath.geometry.Translation2d(globalDistance, globalDistance)
         self.frontRightLocation = wpimath.geometry.Translation2d(globalDistance, -globalDistance)
         self.backLeftLocation = wpimath.geometry.Translation2d(-globalDistance, globalDistance)
