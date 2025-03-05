@@ -108,13 +108,13 @@ class Drivetrain(commands2.Subsystem):
     def periodic(self):
         wpilib.SmartDashboard.putNumber("RobotHeading", self.getHeading())
 
-    def setModuleStates(self, desiredStatesTrans: list[wpimath.kinematics.SwerveModuleState], desiredStatesRot: list[wpimath.kinematics.SwerveModuleState]):
-        wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(desiredStatesTrans, 1)
+    def setModuleStates(self, desiredStates: list[wpimath.kinematics.SwerveModuleState]):
+        wpimath.kinematics.SwerveDrive4Kinematics.desaturateWheelSpeeds(desiredStates, 1)
         # if rotating:
-        self.frontLeft.setDesiredState(desiredStatesTrans[0], desiredStatesRot[0], -1)
-        self.frontRight.setDesiredState(desiredStatesTrans[1], desiredStatesRot[1], 1)
-        self.backLeft.setDesiredState(desiredStatesTrans[2], desiredStatesRot[2], 1)
-        self.backRight.setDesiredState(desiredStatesTrans[3], desiredStatesRot[3], -1)
+        self.frontLeft.setDesiredState(desiredStates[0])
+        self.frontRight.setDesiredState(desiredStates[1])
+        self.backLeft.setDesiredState(desiredStates[2])
+        self.backRight.setDesiredState(desiredStates[3])
         # else:
         #     self.frontLeft.setDesiredState(desiredStates[0], 1)
         #     self.frontRight.setDesiredState(desiredStates[1], 1)
@@ -129,28 +129,17 @@ class Drivetrain(commands2.Subsystem):
             ySpeed = ySpeed * 0.1
         
         if FieldCentric:
-            chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(
-                xSpeed, ySpeed, 0, self.getRotation2d()
-            )
-            moduleStatesTrans = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsTrans)
-            chassisSpeedsRot = wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(
-                0, 0, rot, self.getRotation2d()
-            )
-            moduleStatesRot = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsRot)
-            self.setModuleStates(moduleStatesTrans, moduleStatesRot)
+            chassisSpeeds = wpimath.kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rot, self.getRotation2d())
+            moduleStates = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeeds)
+            self.setModuleStates(moduleStates)
         else:
-            chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds(xSpeed, ySpeed, 0)
-            moduleStatesTrans = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsTrans)
-            chassisSpeedsRot = wpimath.kinematics.ChassisSpeeds(0, 0, rot)
-            moduleStatesRot = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsRot)
-            self.setModuleStates(moduleStatesTrans, moduleStatesRot)
+            chassisSpeeds = wpimath.kinematics.ChassisSpeeds(xSpeed, ySpeed, rot)
+            moduleStates = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeeds)
+            self.setModuleStates(moduleStates)
     
     def drive(self, chassisSpeeds: wpimath.kinematics.ChassisSpeeds):
-        chassisSpeedsTrans = wpimath.kinematics.ChassisSpeeds(chassisSpeeds.vx, chassisSpeeds.vy, 0)
-        moduleStatesTrans = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsTrans)
-        chassisSpeedsRot = wpimath.kinematics.ChassisSpeeds(0, 0, chassisSpeeds.omega)
-        moduleStatesRot = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeedsRot)
-        self.setModuleStates(moduleStatesTrans, moduleStatesRot)
+        moduleStates = self.constants.swerveDriveKinematics.toSwerveModuleStates(chassisSpeeds)
+        self.setModuleStates(moduleStates)
 
     def resetPose(self, pose):
         return self.odometry.resetPose(pose)

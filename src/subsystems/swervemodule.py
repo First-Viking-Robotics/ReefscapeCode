@@ -83,42 +83,20 @@ class SwerveModule:
         lst = [oneUp, goalAngle, oneDown]
         return lst[min(range(len(lst)), key=lambda i: abs(lst[i]-currentAngle))]
     
-    def setDesiredState(self, 
-                        stateTrans: wpimath.kinematics.SwerveModuleState,
-                        stateRot: wpimath.kinematics.SwerveModuleState,
-                        invertedVar: int):
-        if (abs(stateTrans.speed) < 0.02):
+    def setDesiredState(self, state: wpimath.kinematics.SwerveModuleState):
+        if (abs(state.speed) < 0.02):
             self.stop()
 
         currentAngle = self.getState().angle
 
-        wpimath.kinematics.SwerveModuleState.optimize(stateTrans, currentAngle)
-        wpimath.kinematics.SwerveModuleState.optimize(stateRot, currentAngle)
-        # TODO: Create custom optimization function
+        wpimath.kinematics.SwerveModuleState.optimize(state, currentAngle)
 
-        totalPower = abs(stateRot.speed) + abs(stateTrans.speed)
-        if totalPower == 0:
-            rotatingPower = 0
-            translatingPower = 0
-            totalPower = 1
-        else:
-            rotatingPower = abs(stateRot.speed) / totalPower
-            translatingPower = abs(1 - rotatingPower)
-        
-        goalAngle = wpimath.units.degreesToRadians(( (stateRot.angle.degrees() * rotatingPower) + (stateTrans.angle.degrees() * translatingPower)))
-        # goalAngle = self.optimize(currentAngle.radians(), goalAngle)
-        goalSpeed = ((stateRot.speed * invertedVar) + stateTrans.speed) / 2
+        goalAngle = self.optimize(currentAngle.radians(), state.angle.radians())
         # goalState = wpimath.kinematics.SwerveModuleState(goalSpeed, wpimath.geometry.Rotation2d.fromDegrees(wpimath.units.radiansToDegrees(goalAngle)))
 
-        self.turningMotor.set_control(self.control.with_output(self.turningPIDController.calculate(self.getTurningPosition() + self.offset, goalAngle)))
-        self.driveMotor.set_control(self.control.with_output(goalSpeed))
-        # self.turningMotor.set_control(self.control.with_output(self.turningPIDController.calculate(self.getTurningPosition() + self.offset, stateRot.angle.radians())))
-        # self.driveMotor.set_control(self.control.with_output(stateRot.speed * invertedVar))
+        self.turningMotor.set_control(self.control.with_output(self.turningPIDController.calculate(self.getTurningPosition(), goalAngle)))  #  + self.offset
+        self.driveMotor.set_control(self.control.with_output(state.speed))
 
-        wpilib.SmartDashboard.putNumber("Swerve[" + str(self.turningEncoder.device_id) + "] TransPower", translatingPower)
-        wpilib.SmartDashboard.putNumber("Swerve[" + str(self.turningEncoder.device_id) + "] TransAngle", stateTrans.angle.degrees())
-        wpilib.SmartDashboard.putNumber("Swerve[" + str(self.turningEncoder.device_id) + "] RotPower", rotatingPower)
-        wpilib.SmartDashboard.putNumber("Swerve[" + str(self.turningEncoder.device_id) + "] RotAngle", stateRot.angle.degrees())
         wpilib.SmartDashboard.putNumber("Swerve[" + str(self.turningEncoder.device_id) + "] GoalAngle", wpimath.units.radiansToDegrees(goalAngle))
 
     def stop(self):
