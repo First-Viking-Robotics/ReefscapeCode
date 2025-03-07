@@ -14,20 +14,13 @@ import constants
 
 
 class Elevator(commands2.Subsystem):
-    def __init__(self, constants=constants.Constants()):
+    def __init__(self):
         super().__init__()
-        self.constants = constants
-        self.profile = wpimath.trajectory.TrapezoidProfile(
-            wpimath.trajectory.TrapezoidProfile.Constraints(
-                self.constants.ElevatorMaxVelocity,
-                self.constants.ElevatorMaxAccel,  # Max elevator speed and acceleration.
-            )
-        )
-
+        
         self.PIDController = wpimath.controller.ProfiledPIDController(
             0.6, 0, 0, wpimath.trajectory.TrapezoidProfile.Constraints(
-                self.constants.ElevatorMaxVelocity,
-                self.constants.ElevatorMaxAccel
+                0.15,
+                0.1
             )
         )
 

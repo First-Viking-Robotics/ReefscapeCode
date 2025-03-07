@@ -17,6 +17,7 @@ from wpimath.geometry import Rotation2d
 from wpimath.units import rotationsToRadians
 from pathplannerlib.auto import AutoBuilder
 from wpilib import SmartDashboard
+from subsystems import elevator
 
 
 class RobotContainer:
@@ -54,6 +55,8 @@ class RobotContainer:
         self._joystick = commands2.button.CommandXboxController(0)
 
         self.drivetrain = TunerConstants.create_drivetrain()
+
+        self.elevator = elevator.Elevator()
 
         # Path follower
         self._auto_chooser = AutoBuilder.buildAutoChooser("Tests")
