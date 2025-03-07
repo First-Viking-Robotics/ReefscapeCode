@@ -53,6 +53,7 @@ class RobotContainer:
         self._logger = Telemetry(self._max_speed)
 
         self._joystick = commands2.button.CommandXboxController(0)
+        self._controlPanel = commands2.button.CommandGenericHID(1)
 
         self.drivetrain = TunerConstants.create_drivetrain()
 
@@ -71,6 +72,12 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
+
+        # Set the Elevator Default Command
+        self.elevator.setDefaultCommand(
+            # The elevator will execute this command periodically
+            self.elevator.periodic()
+        )
 
         # Note that X is defined as forward according to WPILib convention,
         # and Y is defined as to the left according to WPILib convention.
@@ -123,6 +130,28 @@ class RobotContainer:
         self.drivetrain.register_telemetry(
             lambda state: self._logger.telemeterize(state)
         )
+
+        # define elevator bindings
+        self._controlPanel.button(1).onTrue(  # L2
+            self.elevator.goToL2()
+        )
+
+        self._controlPanel.button(2).onTrue(  # L3
+            self.elevator.goToL3()
+        )
+
+        self._controlPanel.button(5).onTrue(  # L1
+            self.elevator.goToL1()
+        )
+
+        self._controlPanel.button(6).onTrue(  # L4
+            self.elevator.goToL4()
+        )
+
+        # self._controlPanel.button(3).onTrue(commands2.cmd.print_("Button 3"))  # Coral
+        # self._controlPanel.button(4).onTrue(commands2.cmd.print_("Button 4"))  # Algy
+        # self._controlPanel.button(7).onTrue(commands2.cmd.print_("Button 7"))
+        # self._controlPanel.button(8).onTrue(commands2.cmd.print_("Button 8"))
 
     def getAutonomousCommand(self) -> commands2.Command:
         """Use this to pass the autonomous command to the main {@link Robot} class.

@@ -10,7 +10,6 @@ import wpimath.units
 import wpimath.trajectory
 import wpimath.system
 import wpimath.system.plant
-import constants
 
 
 class Elevator(commands2.Subsystem):
@@ -19,13 +18,13 @@ class Elevator(commands2.Subsystem):
         
         self.PIDController = wpimath.controller.ProfiledPIDController(
             0.6, 0, 0, wpimath.trajectory.TrapezoidProfile.Constraints(
-                0.15,
-                0.1
+                0.7,
+                0.5
             )
         )
 
-        self.motorFirst = rev.SparkMax(self.constants.ElevatorFirstMotorPort, rev.SparkMax.MotorType.kBrushless)
-        self.motorSecond = rev.SparkMax(self.constants.ElevatorSecondMotorPort, rev.SparkMax.MotorType.kBrushless)
+        self.motorFirst = rev.SparkMax(26, rev.SparkMax.MotorType.kBrushless)
+        self.motorSecond = rev.SparkMax(27, rev.SparkMax.MotorType.kBrushless)
         self.motorFirst.setVoltage(12)
         self.motorSecond.setVoltage(12)
 
@@ -38,13 +37,11 @@ class Elevator(commands2.Subsystem):
         )
 
         # Preset Goal
-        self.goal = self.constants.ElevatorRest
+        self.goal = 0
 
         # Disable Motors at Start
         self.disable()
         self.encoder.setPosition(0)
-
-        wpilib.SmartDashboard.putNumber("Elevator Goal", 0)
 
     def initMovement(self) -> None:
 
@@ -79,6 +76,11 @@ class Elevator(commands2.Subsystem):
             lambda: self._goToRest(), self
         )
 
+    def periodic(self):
+        return commands2.cmd.run(
+            lambda: self._periodic(), self
+            )
+
     def _goToL1(self):
         self.goal = 1
 
@@ -95,20 +97,19 @@ class Elevator(commands2.Subsystem):
         self.goal = 0
 
     def disable(self):
-        self.motorSecond.setVoltage(0)
-        self.motorFirst.setVoltage(0)
+        self.motorFirst.getClosedLoopController().setReference(0, rev.SparkMax.ControlType.kDutyCycle)
+        self.motorSecond.getClosedLoopController().setReference(0, rev.SparkMax.ControlType.kDutyCycle)
 
-    def periodic(self) -> None:
+    def _periodic(self) -> None:
         # Sets the target position of our arm. This is similar to setting the setpoint of a
         # PID controller.
 
         percentageOutput = self.PIDController.calculate(
             self.encoder.getPosition(),
-            wpilib.SmartDashboard.getNumber("Elevator Goal", 0)
+            self.goal
         )
 
-        wpilib.SmartDashboard.putNumber("Elevator Position", self.encoder.getPosition())
-        wpilib.SmartDashboard.putNumber("Elevator PowerOutput", (percentageOutput + 0.1) * 0.75)
+        # wpilib.SmartDashboard().putValue("Elevator Value", self.encoder.getPosition())
 
         # wpimath.filter.SlewRateLimiter(3)
         self.motorFirst.getClosedLoopController().setReference((percentageOutput + 0.1) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
