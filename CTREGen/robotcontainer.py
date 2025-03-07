@@ -15,6 +15,8 @@ from telemetry import Telemetry
 from phoenix6 import swerve
 from wpimath.geometry import Rotation2d
 from wpimath.units import rotationsToRadians
+from pathplannerlib.auto import AutoBuilder
+from wpilib import SmartDashboard
 
 
 class RobotContainer:
@@ -36,9 +38,9 @@ class RobotContainer:
         # Setting up bindings for necessary control of the swerve drive platform
         self._drive = (
             swerve.requests.FieldCentric()
-            .with_deadband(self._max_speed * 0.1)
+            .with_deadband(self._max_speed * 0.01)
             .with_rotational_deadband(
-                self._max_angular_rate * 0.1
+                self._max_angular_rate * 0.08
             )  # Add a 10% deadband
             .with_drive_request_type(
                 swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
@@ -52,6 +54,10 @@ class RobotContainer:
         self._joystick = commands2.button.CommandXboxController(0)
 
         self.drivetrain = TunerConstants.create_drivetrain()
+
+        # Path follower
+        self._auto_chooser = AutoBuilder.buildAutoChooser("Tests")
+        SmartDashboard.putData("Auto Mode", self._auto_chooser)
 
         # Configure the button bindings
         self.configureButtonBindings()
@@ -70,10 +76,10 @@ class RobotContainer:
             self.drivetrain.apply_request(
                 lambda: (
                     self._drive.with_velocity_x(
-                        -self._joystick.getLeftY() * self._max_speed
+                        -self._joystick.getLeftY() * self._max_speed * 0.1
                     )  # Drive forward with negative Y (forward)
                     .with_velocity_y(
-                        -self._joystick.getLeftX() * self._max_speed
+                        -self._joystick.getLeftX() * self._max_speed * 0.1
                     )  # Drive left with negative X (left)
                     .with_rotational_rate(
                         -self._joystick.getRightX() * self._max_angular_rate
@@ -120,4 +126,4 @@ class RobotContainer:
 
         :returns: the command to run in autonomous
         """
-        return commands2.cmd.print_("No autonomous command configured")
+        return self._auto_chooser.getSelected()
