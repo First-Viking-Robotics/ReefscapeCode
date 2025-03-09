@@ -13,15 +13,17 @@ import wpimath.system.plant
 
 
 class Elevator(commands2.Subsystem):
-    def __init__(self):
+    def __init__(self, enabled):
         super().__init__()
         
         self.PIDController = wpimath.controller.ProfiledPIDController(
             0.6, 0, 0, wpimath.trajectory.TrapezoidProfile.Constraints(
                 0.7,
-                0.5
+                0.7
             )
         )
+
+        self.enabled = enabled
 
         self.motorFirst = rev.SparkMax(26, rev.SparkMax.MotorType.kBrushless)
         self.motorSecond = rev.SparkMax(27, rev.SparkMax.MotorType.kBrushless)
@@ -79,16 +81,16 @@ class Elevator(commands2.Subsystem):
     def periodic(self):
         return commands2.cmd.run(
             lambda: self._periodic(), self
-            )
+            ).ignoringDisable(True)
 
     def _goToL1(self):
-        self.goal = 1
+        self.goal = 0.01
 
     def _goToL2(self):
-        self.goal = 2
+        self.goal = 0.3
 
     def _goToL3(self):
-        self.goal = 3
+        self.goal = 1.7
 
     def _goToL4(self):
         self.goal = 4
@@ -109,11 +111,15 @@ class Elevator(commands2.Subsystem):
             self.goal
         )
 
+        wpilib.SmartDashboard.putNumber("Elevator Position", self.encoder.getPosition())
+
         # wpilib.SmartDashboard().putValue("Elevator Value", self.encoder.getPosition())
 
         # wpimath.filter.SlewRateLimiter(3)
-        self.motorFirst.getClosedLoopController().setReference((percentageOutput + 0.1) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
-        self.motorSecond.getClosedLoopController().setReference((percentageOutput + 0.1) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
+        if self.enabled:
+            self.motorFirst.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
+            self.motorSecond.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
+            wpilib.SmartDashboard.putNumber("Elevator Power", (percentageOutput + 0.29) * -0.75)
 
     def atGoal(self):
         return (self.encoder.getPosition() == self.goal) and (self.encoder.getVelocity() == 0)

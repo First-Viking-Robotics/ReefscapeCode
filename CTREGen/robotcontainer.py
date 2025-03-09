@@ -7,7 +7,6 @@
 import commands2
 import commands2.button
 import commands2.cmd
-from commands2.sysid import SysIdRoutine
 
 from generated.tuner_constants import TunerConstants
 from telemetry import Telemetry
@@ -15,9 +14,9 @@ from telemetry import Telemetry
 from phoenix6 import swerve
 from wpimath.geometry import Rotation2d
 from wpimath.units import rotationsToRadians
-from pathplannerlib.auto import AutoBuilder
+from pathplannerlib.auto import AutoBuilder, NamedCommands
 from wpilib import SmartDashboard
-from subsystems import elevator
+from subsystems import elevator, coralmanipulator
 
 
 class RobotContainer:
@@ -57,11 +56,19 @@ class RobotContainer:
 
         self.drivetrain = TunerConstants.create_drivetrain()
 
-        self.elevator = elevator.Elevator()
+        self.elevator = elevator.Elevator(enabled=False)
+
+        self.coralManipulator = coralmanipulator.CoralScorer()
 
         # Path follower
-        self._auto_chooser = AutoBuilder.buildAutoChooser("Tests")
+        self._auto_chooser = AutoBuilder.buildAutoChooser("MainAuto")
         SmartDashboard.putData("Auto Mode", self._auto_chooser)
+        NamedCommands.registerCommand("shootCoral", self.coralManipulator.shooting())
+        # NamedCommands.registerCommand("holdCoral", self.coralManipulator.holding())
+        NamedCommands.registerCommand("L1", self.elevator.goToL1())
+        NamedCommands.registerCommand("L2", self.elevator.goToL2())
+        NamedCommands.registerCommand("L3", self.elevator.goToL3())
+        NamedCommands.registerCommand("L4", self.elevator.goToL4())
 
         # Configure the button bindings
         self.configureButtonBindings()
@@ -72,6 +79,12 @@ class RobotContainer:
         instantiating a :GenericHID or one of its subclasses (Joystick or XboxController),
         and then passing it to a JoystickButton.
         """
+
+        # Set the Coral Scorer Default Command
+        self.coralManipulator.setDefaultCommand(
+            # The Coral Manipulator will execute this command periodically
+            self.coralManipulator.periodic()
+        )
 
         # Set the Elevator Default Command
         self.elevator.setDefaultCommand(
@@ -106,20 +119,10 @@ class RobotContainer:
                 )
             )
         )
-
-        # Run SysId routines when holding back/start and X/Y.
-        # Note that each routine should be run exactly once in a single log.
-        (self._joystick.back() & self._joystick.y()).whileTrue(
-            self.drivetrain.sys_id_dynamic(SysIdRoutine.Direction.kForward)
-        )
-        (self._joystick.back() & self._joystick.x()).whileTrue(
-            self.drivetrain.sys_id_dynamic(SysIdRoutine.Direction.kReverse)
-        )
-        (self._joystick.start() & self._joystick.y()).whileTrue(
-            self.drivetrain.sys_id_quasistatic(SysIdRoutine.Direction.kForward)
-        )
-        (self._joystick.start() & self._joystick.x()).whileTrue(
-            self.drivetrain.sys_id_quasistatic(SysIdRoutine.Direction.kReverse)
+        self._joystick.x().whileTrue(
+            self.drivetrain.apply_request(
+                lambda: self.drivetrain.playMusic()
+            )
         )
 
         # reset the field-centric heading on left bumper press
@@ -148,7 +151,13 @@ class RobotContainer:
             self.elevator.goToL4()
         )
 
-        # self._controlPanel.button(3).onTrue(commands2.cmd.print_("Button 3"))  # Coral
+        self._controlPanel.button(3).onTrue(  # Coral
+            self.coralManipulator.shooting()
+        )
+
+        self._controlPanel.button(3).onFalse(  # Coral
+            self.coralManipulator.holding()
+        )
         # self._controlPanel.button(4).onTrue(commands2.cmd.print_("Button 4"))  # Algy
         # self._controlPanel.button(7).onTrue(commands2.cmd.print_("Button 7"))
         # self._controlPanel.button(8).onTrue(commands2.cmd.print_("Button 8"))
