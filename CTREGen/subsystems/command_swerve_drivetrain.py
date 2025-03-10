@@ -5,8 +5,8 @@ from phoenix6 import swerve, units, utils
 from typing import Callable, overload
 from wpilib import DriverStation, Notifier, RobotController
 from wpimath.geometry import Pose2d, Rotation2d
-from phoenix6 import Orchestra
-import commands2
+# from phoenix6 import Orchestra
+# import commands2
 
 
 class CommandSwerveDrivetrain(Subsystem, swerve.SwerveDrivetrain):
@@ -155,16 +155,16 @@ class CommandSwerveDrivetrain(Subsystem, swerve.SwerveDrivetrain):
         # Swerve request to apply during path following
         self._apply_robot_speeds = swerve.requests.ApplyRobotSpeeds()
 
-        self.orchestra = Orchestra()
+        # self.orchestra = Orchestra()
 
-        self.orchestra.add_instrument(self.get_module(0).__drive_motor)
-        self.orchestra.add_instrument(self.get_module(0).__steer_motor)
-        self.orchestra.add_instrument(self.get_module(1).__drive_motor)
-        self.orchestra.add_instrument(self.get_module(1).__steer_motor)
-        self.orchestra.add_instrument(self.get_module(2).__drive_motor)
-        self.orchestra.add_instrument(self.get_module(2).__steer_motor)
-        self.orchestra.add_instrument(self.get_module(3).__drive_motor)
-        self.orchestra.add_instrument(self.get_module(3).__steer_motor)
+        # self.orchestra.add_instrument(self.get_module(0).__drive_motor)
+        # self.orchestra.add_instrument(self.get_module(0).__steer_motor)
+        # self.orchestra.add_instrument(self.get_module(1).__drive_motor)
+        # self.orchestra.add_instrument(self.get_module(1).__steer_motor)
+        # self.orchestra.add_instrument(self.get_module(2).__drive_motor)
+        # self.orchestra.add_instrument(self.get_module(2).__steer_motor)
+        # self.orchestra.add_instrument(self.get_module(3).__drive_motor)
+        # self.orchestra.add_instrument(self.get_module(3).__steer_motor)
 
         if utils.is_simulation():
             self._start_sim_thread()
@@ -224,14 +224,14 @@ class CommandSwerveDrivetrain(Subsystem, swerve.SwerveDrivetrain):
                 )
                 self._has_applied_operator_perspective = True
     
-    def playMusic(self):
-        return commands2.cmd.runOnce(
-            lambda: self._playMusic()
-        )
+    # def playMusic(self):
+    #     return commands2.cmd.runOnce(
+    #         lambda: self._playMusic()
+    #     )
     
-    def _playMusic(self):
-        self.orchestra.load_music("track.chrp")
-        self.orchestra.play()
+    # def _playMusic(self):
+    #     self.orchestra.load_music("track.chrp")
+    #     self.orchestra.play()
 
     def _start_sim_thread(self):
         def _sim_periodic():

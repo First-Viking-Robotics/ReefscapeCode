@@ -22,13 +22,13 @@ class CoralScorer(commands2.Subsystem):
         super().__init__()
     
     def _shooting(self):
-        self.speed = 0.5
+        self.speed = 0.2
     
     def _holding(self):
         self.speed = 0
     
     def _sucking(self):
-        self.speed = -0.5
+        self.speed = -0.2
     
     def _periodic(self):
         if self.beamBreakElevator.get():

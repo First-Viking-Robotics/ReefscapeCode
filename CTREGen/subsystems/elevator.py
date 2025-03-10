@@ -23,12 +23,15 @@ class Elevator(commands2.Subsystem):
             )
         )
 
+        # self.PIDController.setIntegratorRange(-0.1, 0.1)
+
         self.enabled = enabled
 
         self.motorFirst = rev.SparkMax(26, rev.SparkMax.MotorType.kBrushless)
         self.motorSecond = rev.SparkMax(27, rev.SparkMax.MotorType.kBrushless)
         self.motorFirst.setVoltage(12)
         self.motorSecond.setVoltage(12)
+        self.offset = 0
 
         # An encoder set up to measure flywheel velocity in radians per second.
         self.encoder = self.motorFirst.getAlternateEncoder()
@@ -52,6 +55,9 @@ class Elevator(commands2.Subsystem):
             self.encoder.getPosition(),
             wpimath.units.rotationsPerMinuteToRadiansPerSecond(self.encoder.getVelocity())
         )
+    
+    def resetOffset(self):
+        self.offset = 0
 
     def goToL1(self):
         return commands2.cmd.runOnce(
@@ -77,6 +83,16 @@ class Elevator(commands2.Subsystem):
         return commands2.cmd.runOnce(
             lambda: self._goToRest(), self
         )
+    
+    def increaseOffset(self):
+        return commands2.cmd.run(
+            lambda: self._increaseOffset(), self
+        )
+    
+    def decreaseOffset(self):
+        return commands2.cmd.run(
+            lambda: self._decreaseOffset(), self
+        )
 
     def periodic(self):
         return commands2.cmd.run(
@@ -84,19 +100,32 @@ class Elevator(commands2.Subsystem):
             ).ignoringDisable(True)
 
     def _goToL1(self):
-        self.goal = 0.01
+        self.resetOffset()
+        self.goal = 0
 
     def _goToL2(self):
+        self.resetOffset()
         self.goal = 0.3
 
     def _goToL3(self):
+        self.resetOffset()
         self.goal = 1.7
 
     def _goToL4(self):
+        self.resetOffset()
         self.goal = 4
 
     def _goToRest(self):
+        self.resetOffset()
         self.goal = 0
+    
+    def _increaseOffset(self):
+        self.offset = self.offset + 0.003
+        self._periodic()
+    
+    def _decreaseOffset(self):
+        self.offset = self.offset - 0.003
+        self._periodic()
 
     def disable(self):
         self.motorFirst.getClosedLoopController().setReference(0, rev.SparkMax.ControlType.kDutyCycle)
@@ -107,19 +136,26 @@ class Elevator(commands2.Subsystem):
         # PID controller.
 
         percentageOutput = self.PIDController.calculate(
-            self.encoder.getPosition(),
-            self.goal
-        )
+                self.encoder.getPosition(),
+                (self.goal + self.offset)
+            )
+            
 
         wpilib.SmartDashboard.putNumber("Elevator Position", self.encoder.getPosition())
+        wpilib.SmartDashboard.putNumber("Offset Position", self.offset)
 
         # wpilib.SmartDashboard().putValue("Elevator Value", self.encoder.getPosition())
 
         # wpimath.filter.SlewRateLimiter(3)
         if self.enabled:
-            self.motorFirst.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
-            self.motorSecond.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
-            wpilib.SmartDashboard.putNumber("Elevator Power", (percentageOutput + 0.29) * -0.75)
+            if self.goal < 0.08:
+                self.motorFirst.getClosedLoopController().setReference(0, rev.SparkMax.ControlType.kDutyCycle)
+                self.motorSecond.getClosedLoopController().setReference(0, rev.SparkMax.ControlType.kDutyCycle)
+                wpilib.SmartDashboard.putNumber("Elevator Power", 0)
+            else:
+                self.motorFirst.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
+                self.motorSecond.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
+                wpilib.SmartDashboard.putNumber("Elevator Power", (percentageOutput + 0.29) * -0.75)
 
     def atGoal(self):
         return (self.encoder.getPosition() == self.goal) and (self.encoder.getVelocity() == 0)

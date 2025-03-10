@@ -37,7 +37,7 @@ class RobotContainer:
 
         # Setting up bindings for necessary control of the swerve drive platform
         self._drive = (
-            swerve.requests.FieldCentric()
+            swerve.requests.RobotCentric()
             .with_deadband(self._max_speed * 0.01)
             .with_rotational_deadband(
                 self._max_angular_rate * 0.08
@@ -56,7 +56,7 @@ class RobotContainer:
 
         self.drivetrain = TunerConstants.create_drivetrain()
 
-        self.elevator = elevator.Elevator(enabled=False)
+        self.elevator = elevator.Elevator(enabled=True)
 
         self.coralManipulator = coralmanipulator.CoralScorer()
 
@@ -99,10 +99,10 @@ class RobotContainer:
             self.drivetrain.apply_request(
                 lambda: (
                     self._drive.with_velocity_x(
-                        -self._joystick.getLeftY() * self._max_speed * 0.1
+                        -self._joystick.getLeftY() * self._max_speed * 0.5
                     )  # Drive forward with negative Y (forward)
                     .with_velocity_y(
-                        -self._joystick.getLeftX() * self._max_speed * 0.1
+                        -self._joystick.getLeftX() * self._max_speed * 0.5
                     )  # Drive left with negative X (left)
                     .with_rotational_rate(
                         -self._joystick.getRightX() * self._max_angular_rate
@@ -119,11 +119,11 @@ class RobotContainer:
                 )
             )
         )
-        self._joystick.x().whileTrue(
-            self.drivetrain.apply_request(
-                lambda: self.drivetrain.playMusic()
-            )
-        )
+        # self._joystick.x().whileTrue(
+        #     self.drivetrain.apply_request(
+        #         lambda: self.drivetrain.playMusic()
+        #     )
+        # )
 
         # reset the field-centric heading on left bumper press
         self._joystick.leftBumper().onTrue(
@@ -158,6 +158,15 @@ class RobotContainer:
         self._controlPanel.button(3).onFalse(  # Coral
             self.coralManipulator.holding()
         )
+
+        self._controlPanel.povUp().whileTrue(
+            self.elevator.increaseOffset()
+        )
+
+        self._controlPanel.povDown().whileTrue(
+            self.elevator.decreaseOffset()
+        )
+
         # self._controlPanel.button(4).onTrue(commands2.cmd.print_("Button 4"))  # Algy
         # self._controlPanel.button(7).onTrue(commands2.cmd.print_("Button 7"))
         # self._controlPanel.button(8).onTrue(commands2.cmd.print_("Button 8"))
