@@ -5,9 +5,9 @@
 # the WPILib BSD license file in the root directory of this project.
 #
 
-import wpilib
 import commands2
 import typing
+from subsystems import gamestate
 
 from robotcontainer import RobotContainer
 
@@ -28,7 +28,8 @@ class MyRobot(commands2.TimedCommandRobot):
 
         # Instantiate our RobotContainer.  This will perform all our button bindings, and put our
         # autonomous chooser on the dashboard.
-        self.container = RobotContainer()
+        self.gameState = gamestate.GameState()
+        self.container = RobotContainer(self)
 
     def robotPeriodic(self) -> None:
         """This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
@@ -45,7 +46,7 @@ class MyRobot(commands2.TimedCommandRobot):
 
     def disabledInit(self) -> None:
         """This function is called once each time the robot enters Disabled mode."""
-        pass
+        self.gameState.gameState = self.gameState.disabled
 
     def disabledPeriodic(self) -> None:
         """This function is called periodically when disabled"""
@@ -53,6 +54,7 @@ class MyRobot(commands2.TimedCommandRobot):
 
     def autonomousInit(self) -> None:
         """This autonomous runs the autonomous command selected by your RobotContainer class."""
+        self.gameState.gameState = self.gameState.auto
         self.autonomousCommand = self.container.getAutonomousCommand()
 
         if self.autonomousCommand:
@@ -67,12 +69,13 @@ class MyRobot(commands2.TimedCommandRobot):
         # teleop starts running. If you want the autonomous to
         # continue until interrupted by another command, remove
         # this line or comment it out.
+        self.gameState.gameState = self.gameState.teleop
         if self.autonomousCommand:
             self.autonomousCommand.cancel()
 
     def teleopPeriodic(self) -> None:
         """This function is called periodically during operator control"""
-        pass
+        self.gameState.gameState = self.gameState.teleop
 
     def testInit(self) -> None:
         # Cancels all running commands at the start of test mode

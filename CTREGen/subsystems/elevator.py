@@ -10,10 +10,11 @@ import wpimath.units
 import wpimath.trajectory
 import wpimath.system
 import wpimath.system.plant
+from subsystems import network
 
 
 class Elevator(commands2.Subsystem):
-    def __init__(self, enabled):
+    def __init__(self, network: network.NetworkingAssistant, enabled: bool):
         super().__init__()
         
         self.PIDController = wpimath.controller.ProfiledPIDController(
@@ -26,6 +27,7 @@ class Elevator(commands2.Subsystem):
         # self.PIDController.setIntegratorRange(-0.1, 0.1)
 
         self.enabled = enabled
+        self.net = network
 
         self.motorFirst = rev.SparkMax(26, rev.SparkMax.MotorType.kBrushless)
         self.motorSecond = rev.SparkMax(27, rev.SparkMax.MotorType.kBrushless)
@@ -141,8 +143,11 @@ class Elevator(commands2.Subsystem):
             )
             
 
-        wpilib.SmartDashboard.putNumber("Elevator Position", self.encoder.getPosition())
-        wpilib.SmartDashboard.putNumber("Offset Position", self.offset)
+        # wpilib.SmartDashboard.putNumber("Elevator Position", self.encoder.getPosition())
+        # wpilib.SmartDashboard.putNumber("Offset Position", self.offset)
+        
+        self.net.mainTable.putString("Elevator Temp", str((self.motorFirst.getMotorTemperature() * (9/5)) + 32) + " / " + str((self.motorSecond.getMotorTemperature() * (9/5)) + 32) + "deg F")
+        
 
         # wpilib.SmartDashboard().putValue("Elevator Value", self.encoder.getPosition())
 
@@ -151,11 +156,11 @@ class Elevator(commands2.Subsystem):
             if self.goal < 0.08:
                 self.motorFirst.getClosedLoopController().setReference(0, rev.SparkMax.ControlType.kDutyCycle)
                 self.motorSecond.getClosedLoopController().setReference(0, rev.SparkMax.ControlType.kDutyCycle)
-                wpilib.SmartDashboard.putNumber("Elevator Power", 0)
+                self.net.mainTable.putNumber("Elevator Power", 0)
             else:
                 self.motorFirst.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
                 self.motorSecond.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
-                wpilib.SmartDashboard.putNumber("Elevator Power", (percentageOutput + 0.29) * -0.75)
+                self.net.mainTable.putNumber("Elevator Power", (percentageOutput + 0.29) * -0.75)
 
     def atGoal(self):
         return (self.encoder.getPosition() == self.goal) and (self.encoder.getVelocity() == 0)

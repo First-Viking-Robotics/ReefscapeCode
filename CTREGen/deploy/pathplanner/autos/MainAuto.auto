@@ -11,6 +11,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "shootCoral"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "MainAuto2"
@@ -23,6 +29,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "shootCoral"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "MainAuto4"
@@ -32,6 +44,12 @@
           "type": "path",
           "data": {
             "pathName": "MainAuto5"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "shootCoral"
           }
         }
       ]

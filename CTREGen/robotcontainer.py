@@ -16,7 +16,8 @@ from wpimath.geometry import Rotation2d
 from wpimath.units import rotationsToRadians
 from pathplannerlib.auto import AutoBuilder, NamedCommands
 from wpilib import SmartDashboard
-from subsystems import elevator, coralmanipulator
+from subsystems import elevator, coralmanipulator, network
+import wpimath
 
 
 class RobotContainer:
@@ -27,7 +28,8 @@ class RobotContainer:
     subsystems, commands, and button mappings) should be declared here.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, robotpyInstance) -> None:
+        self.slowMode = False
         self._max_speed = (
             TunerConstants.speed_at_12_volts
         )  # speed_at_12_volts desired top speed
@@ -49,6 +51,9 @@ class RobotContainer:
         self._brake = swerve.requests.SwerveDriveBrake()
         self._point = swerve.requests.PointWheelsAt()
 
+        self.net = network.NetworkingAssistant()
+        self.mainInstance = robotpyInstance
+
         self._logger = Telemetry(self._max_speed)
 
         self._joystick = commands2.button.CommandXboxController(0)
@@ -56,19 +61,21 @@ class RobotContainer:
 
         self.drivetrain = TunerConstants.create_drivetrain()
 
-        self.elevator = elevator.Elevator(enabled=True)
+        self.elevator = elevator.Elevator(network=self.net, enabled=True)
 
-        self.coralManipulator = coralmanipulator.CoralScorer()
+        self.coralManipulator = coralmanipulator.CoralScorer(getGamestateFunc=self.mainInstance.gameState.getGameState)
 
         # Path follower
-        self._auto_chooser = AutoBuilder.buildAutoChooser("MainAuto")
-        SmartDashboard.putData("Auto Mode", self._auto_chooser)
-        NamedCommands.registerCommand("shootCoral", self.coralManipulator.shooting())
+        NamedCommands.registerCommand("shootCoral", self.coralManipulator.shootAuto())
+        # NamedCommands.registerCommand("holdCoral", self.coralManipulator.holdAuto())
         # NamedCommands.registerCommand("holdCoral", self.coralManipulator.holding())
-        NamedCommands.registerCommand("L1", self.elevator.goToL1())
-        NamedCommands.registerCommand("L2", self.elevator.goToL2())
-        NamedCommands.registerCommand("L3", self.elevator.goToL3())
-        NamedCommands.registerCommand("L4", self.elevator.goToL4())
+        # NamedCommands.registerCommand("L1", self.elevator.goToL1())
+        # NamedCommands.registerCommand("L2", self.elevator.goToL2())
+        # NamedCommands.registerCommand("L3", self.elevator.goToL3())
+        # NamedCommands.registerCommand("L4", self.elevator.goToL4())
+
+        self._auto_chooser = AutoBuilder.buildAutoChooser("ShootTest")
+        SmartDashboard.putData("Auto Mode", self._auto_chooser)
 
         # Configure the button bindings
         self.configureButtonBindings()
@@ -97,17 +104,7 @@ class RobotContainer:
         self.drivetrain.setDefaultCommand(
             # Drivetrain will execute this command periodically
             self.drivetrain.apply_request(
-                lambda: (
-                    self._drive.with_velocity_x(
-                        -self._joystick.getLeftY() * self._max_speed * 0.5
-                    )  # Drive forward with negative Y (forward)
-                    .with_velocity_y(
-                        -self._joystick.getLeftX() * self._max_speed * 0.5
-                    )  # Drive left with negative X (left)
-                    .with_rotational_rate(
-                        -self._joystick.getRightX() * self._max_angular_rate
-                    )  # Drive counterclockwise with negative X (left)
-                )
+                lambda: self.driveJoy()
             )
         )
 
@@ -128,6 +125,14 @@ class RobotContainer:
         # reset the field-centric heading on left bumper press
         self._joystick.leftBumper().onTrue(
             self.drivetrain.runOnce(lambda: self.drivetrain.seed_field_centric())
+        )
+
+        self._joystick.rightBumper().onTrue(
+            self.drivetrain.runOnce(lambda: self.slowModeEnable())
+        )
+
+        self._joystick.rightBumper().onFalse(
+            self.drivetrain.runOnce(lambda: self.slowModeDisable())
         )
 
         self.drivetrain.register_telemetry(
@@ -151,11 +156,11 @@ class RobotContainer:
             self.elevator.goToL4()
         )
 
-        self._controlPanel.button(3).onTrue(  # Coral
+        self._controlPanel.button(3).whileTrue(  # Coral
             self.coralManipulator.shooting()
         )
 
-        self._controlPanel.button(3).onFalse(  # Coral
+        self._controlPanel.button(3).whileFalse(  # Coral
             self.coralManipulator.holding()
         )
 
@@ -170,6 +175,31 @@ class RobotContainer:
         # self._controlPanel.button(4).onTrue(commands2.cmd.print_("Button 4"))  # Algy
         # self._controlPanel.button(7).onTrue(commands2.cmd.print_("Button 7"))
         # self._controlPanel.button(8).onTrue(commands2.cmd.print_("Button 8"))
+    
+    def driveJoy(self):
+        if self.slowMode:
+            xSpeed = -wpimath.applyDeadband(self._joystick.getLeftY(), 0.07) * 0.25
+            ySpeed = -wpimath.applyDeadband(self._joystick.getLeftX(), 0.07) * 0.25
+            rotSpeed = -wpimath.applyDeadband(self._joystick.getRightX(), 0.07) * 0.5
+        else:
+            xSpeed = -wpimath.applyDeadband(self._joystick.getLeftY(), 0.07)
+            ySpeed = -wpimath.applyDeadband(self._joystick.getLeftX(), 0.07)
+            rotSpeed = -wpimath.applyDeadband(self._joystick.getRightX(), 0.07)
+        
+        return self._drive.with_velocity_x(
+                        xSpeed * self._max_speed * 0.5  # Drive forward with negative Y (forward)
+                    ).with_velocity_y(
+                        ySpeed * self._max_speed * 0.5  # Drive left with negative X (left)
+                    ).with_rotational_rate(
+                        rotSpeed * self._max_angular_rate  # Drive counterclockwise with negative X (left)
+                    )
+    
+    def slowModeEnable(self):
+        self.slowMode = True
+    
+    def slowModeDisable(self):
+        self.slowMode = False
+        
 
     def getAutonomousCommand(self) -> commands2.Command:
         """Use this to pass the autonomous command to the main {@link Robot} class.
