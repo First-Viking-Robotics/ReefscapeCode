@@ -5,9 +5,21 @@
     "data": {
       "commands": [
         {
+          "type": "path",
+          "data": {
+            "pathName": "Hi"
+          }
+        },
+        {
           "type": "named",
           "data": {
             "name": "shootCoral"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "lineUp"
           }
         }
       ]

@@ -152,6 +152,7 @@ class Elevator(commands2.Subsystem):
         # wpilib.SmartDashboard().putValue("Elevator Value", self.encoder.getPosition())
 
         # wpimath.filter.SlewRateLimiter(3)
+        self.net.mainTable.putNumber("Elevator Pos", self.encoder.getPosition())
         if self.enabled:
             if self.goal < 0.08:
                 self.motorFirst.getClosedLoopController().setReference(0, rev.SparkMax.ControlType.kDutyCycle)

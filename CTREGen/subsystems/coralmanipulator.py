@@ -30,6 +30,10 @@ class CoralScorer(commands2.Subsystem):
         self.setpoint = self.setpoint + 0.1
         self._periodic()
     
+    def _shootingSlow(self):
+        self.setpoint = self.setpoint + 0.025
+        self._periodic()
+    
     def _shootingAuto(self):
         self.setpoint = self.setpoint + 3
         self._periodic()
@@ -38,7 +42,7 @@ class CoralScorer(commands2.Subsystem):
         self._periodic()
     
     def _sucking(self):
-        self.setpoint = self.setpoint - 0.1
+        self.setpoint = self.setpoint - 0.025
         self._periodic()
     
     def _periodic(self):
@@ -110,6 +114,16 @@ class CoralScorer(commands2.Subsystem):
         return commands2.cmd.run(
             lambda: self._shooting(), self
             )
+    
+    def shootingSlow(self):
+        return commands2.cmd.run(
+            lambda: self._shootingSlow(), self
+            )
+    
+    def sucking(self):
+        return commands2.cmd.run(
+            lambda: self._sucking(), self
+        )
     
     def shootAuto(self):
         # return SpitCoral(self)
