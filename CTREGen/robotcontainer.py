@@ -99,15 +99,16 @@ class RobotContainer:
             lambda: self.limelightAlign()
         )
 
+
         # Path follower
         NamedCommands.registerCommand("shootCoral", self.coralManipulator.shootAuto())
         NamedCommands.registerCommand("lineUp", self.autoCommand)
         # NamedCommands.registerCommand("holdCoral", self.coralManipulator.holdAuto())
         # NamedCommands.registerCommand("holdCoral", self.coralManipulator.holding())
-        # NamedCommands.registerCommand("L1", self.elevator.goToL1())
-        # NamedCommands.registerCommand("L2", self.elevator.goToL2())
-        # NamedCommands.registerCommand("L3", self.elevator.goToL3())
-        # NamedCommands.registerCommand("L4", self.elevator.goToL4())
+        NamedCommands.registerCommand("L1", self.elevator.goToL1())
+        NamedCommands.registerCommand("L2", self.elevator.goToL2())
+        NamedCommands.registerCommand("L3", self.elevator.goToL3())
+        NamedCommands.registerCommand("L4", self.elevator.goToL4())
 
         self._auto_chooser = AutoBuilder.buildAutoChooser("ShootTest")
         SmartDashboard.putData("Auto Mode", self._auto_chooser)
@@ -274,7 +275,7 @@ class RobotContainer:
             rotSpeed = 0
         if self.timer.hasElapsed(3):
             self.timer.stop()
-            self.autoCommand.cancel()
+            self.autoCommand.isFinished = lambda: True
         return self._drive.with_velocity_x(
                         xSpeed * self._max_speed * 0.05  # Drive forward with negative Y (forward)
                     ).with_velocity_y(

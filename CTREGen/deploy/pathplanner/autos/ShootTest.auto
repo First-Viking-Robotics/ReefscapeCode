@@ -13,13 +13,19 @@
         {
           "type": "named",
           "data": {
-            "name": "shootCoral"
+            "name": "lineUp"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "lineUp"
+            "name": "shootCoral"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "iH"
           }
         }
       ]

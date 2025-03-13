@@ -16,6 +16,9 @@ from subsystems import network
 class Elevator(commands2.Subsystem):
     def __init__(self, network: network.NetworkingAssistant, enabled: bool):
         super().__init__()
+        self.autoElevateEnabled = False
+        self.timer = wpilib.Timer()
+        self.timer.reset()
         
         self.PIDController = wpimath.controller.ProfiledPIDController(
             0.6, 0, 0, wpimath.trajectory.TrapezoidProfile.Constraints(
@@ -23,6 +26,7 @@ class Elevator(commands2.Subsystem):
                 0.7
             )
         )
+        self.PIDController.setTolerance(0.2, 0.2)
 
         # self.PIDController.setIntegratorRange(-0.1, 0.1)
 
@@ -60,6 +64,7 @@ class Elevator(commands2.Subsystem):
     
     def resetOffset(self):
         self.offset = 0
+        self.autoElevateEnabled = False
 
     def goToL1(self):
         return commands2.cmd.runOnce(
@@ -162,6 +167,23 @@ class Elevator(commands2.Subsystem):
                 self.motorFirst.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
                 self.motorSecond.getClosedLoopController().setReference((percentageOutput + 0.29) * -0.75, rev.SparkMax.ControlType.kDutyCycle)
                 self.net.mainTable.putNumber("Elevator Power", (percentageOutput + 0.29) * -0.75)
+    
+#     def waitForElevator(self, cmd: commands2.Command):
+#         if self.autoElevateEnabled is False:
+#             self.autoElevateEnabled = True
+#             self.timer.reset()
+#             self.timer.start()
+        
+#         if self.PIDController.atGoal() or self.timer.hasElapsed(5):
+#             self.timer.stop()
+#             cmd.isFinished = lambda: True
+#         return cmd
 
-    def atGoal(self):
-        return (self.encoder.getPosition() == self.goal) and (self.encoder.getVelocity() == 0)
+# class Wait(commands2.Command):
+#     def __init__(self, elevator: Elevator):
+#         self.elevator = elevator
+#         super().__init__()
+    
+#     def execute(self):
+#         self.elevator.waitForElevator()
+    

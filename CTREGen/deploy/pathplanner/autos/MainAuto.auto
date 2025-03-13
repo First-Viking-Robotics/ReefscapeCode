@@ -19,31 +19,31 @@
         {
           "type": "named",
           "data": {
+            "name": "L2"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 5.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
             "name": "shootCoral"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 5.0
           }
         },
         {
           "type": "path",
           "data": {
             "pathName": "MainAuto2"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "MainAuto3"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "MainAuto4"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "MainAuto5"
           }
         }
       ]
